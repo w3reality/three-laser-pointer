@@ -1,0 +1,49 @@
+{
+    "name": "three-laser-pointer",
+    "version": "1.0.0",
+    "description": "Laser object for three.js",
+    "main": "dist/three-laser-pointer.js",
+    "directories": {
+        "example": "examples",
+        "test": "test"
+    },
+    "scripts": {
+        "dist": "npm run build && rm -rf ./dist && cp -r ./lib ./dist",
+        "build": "webpack --env dev && webpack --env build && npm run test",
+        "dev": "webpack --progress --colors --watch --env dev",
+        "test": "mocha --require babel-core/register --colors ./test/*.spec.js",
+        "test:watch": "mocha --require babel-core/register --colors -w ./test/*.spec.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/w3reality/three-laser-pointer.git"
+    },
+    "keywords": [
+        "three",
+        "laser",
+        "pointer"
+    ],
+    "author": "j-devel",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/w3reality/three-laser-pointer/issues"
+    },
+    "homepage": "https://github.com/w3reality/three-laser-pointer",
+    "dependencies": {
+        "three": "^0.92.0"
+    },
+    "devDependencies": {
+        "babel-cli": "^6.26.0",
+        "babel-core": "^6.26.0",
+        "babel-eslint": "^8.0.3",
+        "babel-loader": "^7.1.2",
+        "babel-plugin-add-module-exports": "^0.2.1",
+        "babel-preset-env": "^1.6.1",
+        "chai": "^4.1.2",
+        "eslint": "^4.13.1",
+        "eslint-loader": "^1.9.0",
+        "mocha": "^4.0.1",
+        "webpack": "^3.10.0",
+        "yargs": "^10.0.3"
+    }
+}
