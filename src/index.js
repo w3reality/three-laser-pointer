@@ -53,11 +53,11 @@ class Line extends THREE.Line {
 class Laser extends Line {
     constructor(color=0xff0000) {
         super(2, color);
-        this._ptr = new THREE.Vector3(0, 0, 0);
+        this._src = new THREE.Vector3(0, 0, 0);
     }
     point(x, y, z, color=null) {
         this.updatePointsTwo(
-            this._ptr.x, this._ptr.y, this._ptr.z,
+            this._src.x, this._src.y, this._src.z,
             x, y, z);
         if (color) {
             this.material.color.setHex(color);
@@ -66,9 +66,10 @@ class Laser extends Line {
     toggle(tf) {
         this.visible = tf;
     }
-    setPointer(camera, offsetX, offsetY, offsetZ) {
-        this._ptr = (new THREE.Vector3(offsetX, offsetY, offsetZ))
-            .applyMatrix4(camera.matrixWorld);
+    setSource(x, y, z, camera=null) {
+        // in case camera is given, treat (x, y, z) as in the camera coords
+        let vec = new THREE.Vector3(x, y, z);
+        this._src = camera ? vec.applyMatrix4(camera.matrixWorld) : vec;
     }
 }
 
