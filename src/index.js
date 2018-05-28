@@ -12,6 +12,12 @@ class Line extends THREE.Line {
         });
         super(geometry, material);
     }
+    _frustumCullingWorkaround() {
+        // https://stackoverflow.com/questions/36497763/three-js-line-disappears-if-one-point-is-outside-of-the-cameras-view
+        this.geometry.computeBoundingSphere();
+        //----
+        // this.frustumCulled = false;
+    }
     updatePointsTwo(x0, y0, z0, x1, y1, z1) {
         let attrPos = this.geometry.attributes.position;
         if (attrPos.count < 2) return;
@@ -23,6 +29,7 @@ class Line extends THREE.Line {
         attrPos.array[5] = z1;
         attrPos.needsUpdate = true;
         this.geometry.setDrawRange(0, 2);
+        this._frustumCullingWorkaround();
     }
     _setPointsRandomWalk(positions, numPoints) {
         let x = 0;
@@ -47,6 +54,7 @@ class Line extends THREE.Line {
         this._setPointsRandomWalk(attrPos.array, numPoints);
         attrPos.needsUpdate = true;
         this.geometry.setDrawRange(0, numPoints);
+        this._frustumCullingWorkaround();
     };
 }
 
@@ -56,9 +64,9 @@ class Laser extends Line {
         this._src = new THREE.Vector3(0, 0, 0);
     }
     point(x, y, z, color=null) {
+        console.log("point():", this._src, x, y, z);
         this.updatePointsTwo(
-            this._src.x, this._src.y, this._src.z,
-            x, y, z);
+            this._src.x, this._src.y, this._src.z, x, y, z);
         if (color) {
             this.material.color.setHex(color);
         }
