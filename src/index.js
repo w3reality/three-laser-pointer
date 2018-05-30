@@ -64,7 +64,7 @@ class Laser extends Line {
         this._src = new THREE.Vector3(0, 0, 0);
     }
     point(x, y, z, color=null) {
-        console.log("point():", this._src, x, y, z);
+        // console.log("point():", this._src, x, y, z);
         this.updatePointsTwo(
             this._src.x, this._src.y, this._src.z, x, y, z);
         if (color) {
