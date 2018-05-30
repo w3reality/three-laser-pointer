@@ -12,7 +12,7 @@ In terminal,
    
    $ npm install three-laser-pointer
 
-   Load module(s) as
+Load module(s) as
 
 .. code::
 
