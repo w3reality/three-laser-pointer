@@ -11,7 +11,8 @@
     <script src="./stats.min.js"></script>
     <script src="./OrbitControls.js"></script>
 
-    <script src="../../dist/three-laser-pointer.min.js"></script>
+    <!-- <script src="../../dist/three-laser-pointer.min.js"></script> -->
+    <script src="../../lib/three-laser-pointer.js"></script>
 
     <script>
         'use strict';
@@ -47,7 +48,7 @@
         let data = (() => {
             let scene = new THREE.Scene();
             let material = new THREE.MeshPhongMaterial({
-                color: 0x40a040,
+                color: 0xc0c0c0,
                 // wireframe: true,
                 side: THREE.FrontSide,
                 // side: THREE.BackSide,
@@ -96,56 +97,41 @@
                 scene.add(m);
             }
 
-            //======== add a pointer line
+            //======== add laser
+            if (1) {
+                let line = new LaserPointer.Line(32, 0x00ffff);
+                line.updatePointsRandomWalk(32);
+                scene.add(line);
+            }
 
-            let line = new LaserPointer.Line(32);
-            line.updatePointsRandomWalk(32);
-            scene.add(line);
-
-            let laser = new LaserPointer.Laser(0x00ff00);
-            // laser.point(1.75, -0.25, 1.25); // testing
+            let laser = new LaserPointer.Laser(0xffffff);
             scene.add(laser);
+
+            const meshes = [];
+            scene.traverse((node) => {
+                if (node instanceof THREE.Mesh) {
+                    meshes.push(node);
+                }
+            });
 
             return {
                 scene: scene,
-                pick: (mx, my) => {
-                    return;
-                    if (0) { // for gpu-picking a mesh
-                        let mesh = mp.pickMesh(mx, my, camera);
-                        if (mesh !== null) {
-                            console.log(`uuid: ${mesh.uuid}`);
-                            if (1) { // gpu-picking + raycast combo
-                                let intersect = mp.raycast(mx, my, [mesh], camera);
-                                if (intersect !== null) {
-                                    // console.log('intersect:', intersect);
-                                    console.log('intersect.point:', intersect.point);
-                                    // console.log('intersect.face:', intersect.face);
-                                }
-                            }
-                        } else {
-                            console.log('no meshes');
-                        }
-                    }
-                    if (1) { // for gpu-picking a point
-                        let point = mp.pickPoint(mx, my, camera);
-                        if (point !== null) {
-                            // laser.setPointer(0.3, -0.4, -1.2, camera); // debug: push pointer ahead enough so it's seen
-                            laser.setSource(0.3, -0.4, -0.2, camera);
-                            laser.point(point.x, point.y, point.z);
-                            laser.toggle(true);
-                            if (0) { // evaluate the picked point with raycasting
-                                let intersect = mp.raycast(mx, my, mp.list(), camera);
-                                if (intersect !== null) {
-                                    let diff = (new THREE.Vector3()).subVectors(intersect.point, point).length();
-                                    console.log('diff:', diff);
-                                }
-                            }
-                        } else {
-                            console.log('no points');
-                            // let posInf = mp.getPositionInfinity(mx, my, camera);
-                            // console.log('posInf:', posInf);
-                            laser.toggle(false);
-                        }
+                pick: (mx, my, cam) => {
+                    let isect = laser.raycastFromCamera(
+                        mx, my, canvas.width, canvas.height, cam, meshes);
+                    if (isect !== null) {
+                        console.log('isect:', isect);
+                        let pt = isect.point;
+                        laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), cam);
+
+                        // laser.point(pt, 0xff0000);
+                        //----
+                        laser.pointWithRaytrace(pt, meshes, 0xff0000);
+
+                        laser.toggle(true);
+                    } else {
+                        console.log('no isects');
+                        laser.toggle(false);
                     }
                 },
             };
@@ -157,7 +143,7 @@
             let mx = e.clientX - rect.left;
             let my = e.clientY - rect.top;
             // console.log('mouse:', mx, my, canvas.width, canvas.height);
-            data.pick(mx, my);
+            data.pick(mx, my, camera);
         });
 
         let render = () => {
@@ -168,7 +154,7 @@
         document.body.appendChild(stats.dom);
 
         let stop = false;
-        setTimeout(() => { stop = true; }, 16*1000);
+        setTimeout(() => { stop = true; }, 5*60*1000);
         let animate = () => {
             stats.update();
             resizeCanvasToDisplaySize();

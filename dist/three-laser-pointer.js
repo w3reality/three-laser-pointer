@@ -92,6 +92,8 @@ var THREE = _interopRequireWildcard(_three);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -118,6 +120,14 @@ var Line = function (_THREE$Line) {
     }
 
     _createClass(Line, [{
+        key: '_frustumCullingWorkaround',
+        value: function _frustumCullingWorkaround() {
+            // https://stackoverflow.com/questions/36497763/three-js-line-disappears-if-one-point-is-outside-of-the-cameras-view
+            this.geometry.computeBoundingSphere();
+            //----
+            // this.frustumCulled = false;
+        }
+    }, {
         key: 'updatePointsTwo',
         value: function updatePointsTwo(x0, y0, z0, x1, y1, z1) {
             var attrPos = this.geometry.attributes.position;
@@ -130,34 +140,48 @@ var Line = function (_THREE$Line) {
             attrPos.array[5] = z1;
             attrPos.needsUpdate = true;
             this.geometry.setDrawRange(0, 2);
+            this._frustumCullingWorkaround();
         }
     }, {
-        key: '_setPointsRandomWalk',
-        value: function _setPointsRandomWalk(positions, numPoints) {
+        key: '_getPointsRandomWalk',
+        value: function _getPointsRandomWalk(numPoints) {
+            var positions = [];
             var x = 0;
             var y = 0;
             var z = 0;
             for (var i = 0; i < numPoints; i++) {
-                positions[3 * i] = x;
-                positions[3 * i + 1] = y;
-                positions[3 * i + 2] = z;
+                positions.push(x);
+                positions.push(y);
+                positions.push(z);
                 x += (Math.random() - 0.5) * 2;
                 y += (Math.random() - 0.5) * 2;
                 z += (Math.random() - 0.5) * 2;
             }
+            return positions;
+        }
+    }, {
+        key: 'updatePoints',
+        value: function updatePoints(arr) {
+            var attrPos = this.geometry.attributes.position;
+            var maxPoints = attrPos.count;
+            var numPoints = arr.length / 3;
+            console.log('numPoints/maxPoints: ' + numPoints + '/' + maxPoints);
+            if (numPoints > maxPoints) {
+                numPoints = maxPoints;
+            }
+            for (var i = 0; i < numPoints; i++) {
+                attrPos.array[3 * i] = arr[3 * i];
+                attrPos.array[3 * i + 1] = arr[3 * i + 1];
+                attrPos.array[3 * i + 2] = arr[3 * i + 2];
+            }
+            attrPos.needsUpdate = true;
+            this.geometry.setDrawRange(0, numPoints);
+            this._frustumCullingWorkaround();
         }
     }, {
         key: 'updatePointsRandomWalk',
         value: function updatePointsRandomWalk(numPoints) {
-            var attrPos = this.geometry.attributes.position;
-            var maxPoints = attrPos.count;
-            console.log(maxPoints);
-            if (numPoints > maxPoints) {
-                numPoints = maxPoints;
-            }
-            this._setPointsRandomWalk(attrPos.array, numPoints);
-            attrPos.needsUpdate = true;
-            this.geometry.setDrawRange(0, numPoints);
+            this.updatePoints(this._getPointsRandomWalk(numPoints));
         }
     }]);
 
@@ -172,31 +196,101 @@ var Laser = function (_Line) {
 
         _classCallCheck(this, Laser);
 
-        var _this2 = _possibleConstructorReturn(this, (Laser.__proto__ || Object.getPrototypeOf(Laser)).call(this, 2, color));
+        var _this2 = _possibleConstructorReturn(this, (Laser.__proto__ || Object.getPrototypeOf(Laser)).call(this, 16, color));
 
-        _this2._ptr = new THREE.Vector3(0, 0, 0);
+        _this2._src = new THREE.Vector3(0, 0, 0);
+        _this2._raycaster = new THREE.Raycaster();
         return _this2;
     }
 
     _createClass(Laser, [{
-        key: 'point',
-        value: function point(x, y, z) {
-            var color = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
-
-            this.updatePointsTwo(this._ptr.x, this._ptr.y, this._ptr.z, x, y, z);
-            if (color) {
-                this.material.color.setHex(color);
-            }
-        }
-    }, {
         key: 'toggle',
         value: function toggle(tf) {
             this.visible = tf;
         }
     }, {
-        key: 'setPointer',
-        value: function setPointer(camera, offsetX, offsetY, offsetZ) {
-            this._ptr = new THREE.Vector3(offsetX, offsetY, offsetZ).applyMatrix4(camera.matrixWorld);
+        key: 'setSource',
+        value: function setSource(src) {
+            var camera = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+            // in case camera is given, treat (x, y, z) as in the camera coords
+            this._src = camera ? src.clone().applyMatrix4(camera.matrixWorld) : src.clone();
+        }
+    }, {
+        key: 'getSource',
+        value: function getSource() {
+            return this._src.clone();
+        }
+    }, {
+        key: 'computeDirection',
+        value: function computeDirection(src, target) {
+            return target.clone().sub(src).normalize();
+        }
+    }, {
+        key: 'computeReflection',
+        value: function computeReflection(d, n) {
+            // r = d - 2 * (d.n) n;  https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
+            return d.clone().sub(n.clone().multiplyScalar(2 * d.dot(n)));
+        }
+    }, {
+        key: '_raycast',
+        value: function _raycast(meshes, recursive) {
+            var intersects = this._raycaster.intersectObjects(meshes, recursive);
+            return intersects.length > 0 ? intersects[0] : null;
+        }
+    }, {
+        key: 'raycast',
+        value: function raycast(origin, direction, meshes) {
+            this._raycaster.set(origin, direction);
+            return this._raycast(meshes, false);
+        }
+    }, {
+        key: 'raycastFromCamera',
+        value: function raycastFromCamera(mx, my, width, height, cam, meshes) {
+            var recursive = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : false;
+
+            var mouse = new THREE.Vector2( // normalized (-1 to +1)
+            mx / width * 2 - 1, -(my / height) * 2 + 1);
+            // https://threejs.org/docs/#api/core/Raycaster
+            // update the picking ray with the camera and mouse position
+            this._raycaster.setFromCamera(mouse, cam);
+            return this._raycast(meshes, recursive);
+        }
+    }, {
+        key: 'point',
+        value: function point(pt) {
+            var color = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+            // console.log("point():", this._src, pt);
+            this.updatePointsTwo(this._src.x, this._src.y, this._src.z, pt.x, pt.y, pt.z);
+            if (color) {
+                this.material.color.setHex(color);
+            }
+        }
+    }, {
+        key: 'pointWithRaytrace',
+        value: function pointWithRaytrace(pt) {
+            var meshes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+            var color = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+            // TODO trace level
+            this.point(pt, color);
+            var src = this.getSource();
+            var dir = this.computeDirection(src, pt);
+            var isect = this.raycast(src, dir, meshes);
+            if (isect !== null) {
+                var meshes2 = [].concat(_toConsumableArray(meshes)).filter(function (m) {
+                    return m !== isect.object;
+                });
+                var ref = this.computeReflection(dir, isect.face.normal);
+                var isect2 = this.raycast(pt, ref, meshes2);
+                console.log('isect2:', isect2);
+                if (isect2 !== null) {
+                    this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, isect2.point.x, isect2.point.y, isect2.point.z]);
+                } else {
+                    var far = pt.clone().add(ref.multiplyScalar(9999.0));
+                    this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, far.x, far.y, far.z]);
+                }
+            }
         }
     }]);
 
