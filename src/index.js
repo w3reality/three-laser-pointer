@@ -75,7 +75,7 @@ class Laser extends Line {
         this._src = new THREE.Vector3(0, 0, 0);
         this._raycaster = new THREE.Raycaster();
     }
-    toggle(tf) {
+    setVisibility(tf) {
         this.visible = tf;
     }
     setSource(src, camera=null) {
@@ -119,30 +119,31 @@ class Laser extends Line {
     }
     pointWithRaytrace(pt, meshes=[], color=null) { // TODO trace level
         this.point(pt, color);
+
         let src = this.getSource();
         let dir = this.computeDirection(src, pt);
         let isect = this.raycast(src, dir, meshes);
-        if (isect !== null) {
-            let meshes2 = [...meshes].filter((m) => {
-                return m !== isect.object;
-            });
-            let ref = this.computeReflection(dir, isect.face.normal);
-            let isect2 = this.raycast(pt, ref, meshes2);
-            console.log('isect2:', isect2);
-            if (isect2 !== null) {
-                this.updatePoints([
-                    src.x, src.y, src.z,
-                    pt.x, pt.y, pt.z,
-                    isect2.point.x, isect2.point.y, isect2.point.z,
-                ]);
-            } else {
-                let far = pt.clone().add(ref.multiplyScalar(9999.0));
-                this.updatePoints([
-                    src.x, src.y, src.z,
-                    pt.x, pt.y, pt.z,
-                    far.x, far.y, far.z,
-                ]);
-            }
+        if (!isect) return;
+
+        let meshes2 = [...meshes].filter((m) => {
+            return m !== isect.object;
+        });
+        let ref = this.computeReflection(dir, isect.face.normal);
+        let isect2 = this.raycast(pt, ref, meshes2);
+        console.log('isect2:', isect2);
+        if (isect2 !== null) {
+            this.updatePoints([
+                src.x, src.y, src.z,
+                pt.x, pt.y, pt.z,
+                isect2.point.x, isect2.point.y, isect2.point.z,
+            ]);
+        } else {
+            let far = pt.clone().add(ref.multiplyScalar(9999.0));
+            this.updatePoints([
+                src.x, src.y, src.z,
+                pt.x, pt.y, pt.z,
+                far.x, far.y, far.z,
+            ]);
         }
     }
 }
