@@ -116,7 +116,12 @@ var Line = function (_THREE$Line) {
         var material = new THREE.LineBasicMaterial({
             color: color
         });
-        return _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).call(this, geometry, material));
+
+        var _this = _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).call(this, geometry, material));
+
+        _this._maxPoints = maxPoints;
+        _this._numPoints = 0;
+        return _this;
     }
 
     _createClass(Line, [{
@@ -126,21 +131,6 @@ var Line = function (_THREE$Line) {
             this.geometry.computeBoundingSphere();
             //----
             // this.frustumCulled = false;
-        }
-    }, {
-        key: 'updatePointsTwo',
-        value: function updatePointsTwo(x0, y0, z0, x1, y1, z1) {
-            var attrPos = this.geometry.attributes.position;
-            if (attrPos.count < 2) return;
-            attrPos.array[0] = x0;
-            attrPos.array[1] = y0;
-            attrPos.array[2] = z0;
-            attrPos.array[3] = x1;
-            attrPos.array[4] = y1;
-            attrPos.array[5] = z1;
-            attrPos.needsUpdate = true;
-            this.geometry.setDrawRange(0, 2);
-            this._frustumCullingWorkaround();
         }
     }, {
         key: '_getPointsRandomWalk',
@@ -160,6 +150,13 @@ var Line = function (_THREE$Line) {
             return positions;
         }
     }, {
+        key: 'getPoints',
+        value: function getPoints() {
+            var arr = [].concat(_toConsumableArray(this.geometry.attributes.position.array)); // dup
+            arr.length = this._numPoints * 3; // truncate
+            return arr;
+        }
+    }, {
         key: 'updatePoints',
         value: function updatePoints(arr) {
             var attrPos = this.geometry.attributes.position;
@@ -177,6 +174,12 @@ var Line = function (_THREE$Line) {
             attrPos.needsUpdate = true;
             this.geometry.setDrawRange(0, numPoints);
             this._frustumCullingWorkaround();
+            this._numPoints = numPoints;
+        }
+    }, {
+        key: 'clearPoints',
+        value: function clearPoints() {
+            this.updatePoints([]);
         }
     }, {
         key: 'updatePointsRandomWalk',
@@ -192,23 +195,27 @@ var Laser = function (_Line) {
     _inherits(Laser, _Line);
 
     function Laser() {
-        var color = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0xff0000;
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
         _classCallCheck(this, Laser);
 
-        var _this2 = _possibleConstructorReturn(this, (Laser.__proto__ || Object.getPrototypeOf(Laser)).call(this, 16, color));
+        // https://stackoverflow.com/questions/9602449/a-javascript-design-pattern-for-options-with-default-values
+        var defaults = {
+            color: 0xff0000,
+            maxPoints: 256,
+            infLength: 9999
+        };
+        var actual = Object.assign({}, defaults, options);
+
+        var _this2 = _possibleConstructorReturn(this, (Laser.__proto__ || Object.getPrototypeOf(Laser)).call(this, actual.maxPoints, actual.color));
 
         _this2._src = new THREE.Vector3(0, 0, 0);
         _this2._raycaster = new THREE.Raycaster();
+        _this2._infLen = actual.infLength;
         return _this2;
     }
 
     _createClass(Laser, [{
-        key: 'toggle',
-        value: function toggle(tf) {
-            this.visible = tf;
-        }
-    }, {
         key: 'setSource',
         value: function setSource(src) {
             var camera = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
@@ -222,27 +229,37 @@ var Laser = function (_Line) {
             return this._src.clone();
         }
     }, {
-        key: 'computeDirection',
-        value: function computeDirection(src, target) {
+        key: 'direct',
+        value: function direct(src, target) {
             return target.clone().sub(src).normalize();
         }
     }, {
-        key: 'computeReflection',
-        value: function computeReflection(d, n) {
+        key: 'reflect',
+        value: function reflect(d, n) {
             // r = d - 2 * (d.n) n;  https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
             return d.clone().sub(n.clone().multiplyScalar(2 * d.dot(n)));
         }
     }, {
         key: '_raycast',
-        value: function _raycast(meshes, recursive) {
-            var intersects = this._raycaster.intersectObjects(meshes, recursive);
-            return intersects.length > 0 ? intersects[0] : null;
+        value: function _raycast(meshes, recursive, faceExclude) {
+            var isects = this._raycaster.intersectObjects(meshes, recursive);
+            if (faceExclude) {
+                for (var i = 0; i < isects.length; i++) {
+                    if (isects[i].face != faceExclude) {
+                        return isects[i];
+                    }
+                }
+                return null;
+            }
+            return isects.length > 0 ? isects[0] : null;
         }
     }, {
         key: 'raycast',
         value: function raycast(origin, direction, meshes) {
+            var faceExclude = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+
             this._raycaster.set(origin, direction);
-            return this._raycast(meshes, false);
+            return this._raycast(meshes, false, faceExclude);
         }
     }, {
         key: 'raycastFromCamera',
@@ -254,7 +271,7 @@ var Laser = function (_Line) {
             // https://threejs.org/docs/#api/core/Raycaster
             // update the picking ray with the camera and mouse position
             this._raycaster.setFromCamera(mouse, cam);
-            return this._raycast(meshes, recursive);
+            return this._raycast(meshes, recursive, null);
         }
     }, {
         key: 'point',
@@ -262,7 +279,7 @@ var Laser = function (_Line) {
             var color = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
             // console.log("point():", this._src, pt);
-            this.updatePointsTwo(this._src.x, this._src.y, this._src.z, pt.x, pt.y, pt.z);
+            this.updatePoints([this._src.x, this._src.y, this._src.z, pt.x, pt.y, pt.z]);
             if (color) {
                 this.material.color.setHex(color);
             }
@@ -272,25 +289,51 @@ var Laser = function (_Line) {
         value: function pointWithRaytrace(pt) {
             var meshes = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
             var color = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
-            // TODO trace level
+            var maxReflect = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 16;
+
             this.point(pt, color);
+
             var src = this.getSource();
-            var dir = this.computeDirection(src, pt);
+            var dir = this.direct(src, pt);
             var isect = this.raycast(src, dir, meshes);
-            if (isect !== null) {
-                var meshes2 = [].concat(_toConsumableArray(meshes)).filter(function (m) {
-                    return m !== isect.object;
-                });
-                var ref = this.computeReflection(dir, isect.face.normal);
-                var isect2 = this.raycast(pt, ref, meshes2);
-                console.log('isect2:', isect2);
-                if (isect2 !== null) {
-                    this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, isect2.point.x, isect2.point.y, isect2.point.z]);
+            if (!isect) return;
+
+            var arrRefs = this.computeReflections(pt, dir, isect, meshes, maxReflect);
+            this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z].concat(_toConsumableArray(arrRefs)));
+        }
+    }, {
+        key: 'computeReflections',
+        value: function computeReflections(src, dir, isect, meshes, maxReflect) {
+            var self = this;
+            var arr = [];
+            // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
+            // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
+            (function me(src, dir, isect) {
+                // https://stackoverflow.com/questions/39082673/get-face-global-normal-in-three-js
+                // console.log('local normal:', isect.face.normal);
+                var normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
+                var normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+
+                var ref = self.reflect(dir, normalWorld);
+                var isectNew = self.raycast(src, ref, meshes, isect.face);
+                // console.log('isectNew:', isectNew);
+
+                if (isectNew) {
+                    var pt = isectNew.point;
+                    arr.push(pt.x);
+                    arr.push(pt.y);
+                    arr.push(pt.z);
+                    if (arr.length / 3 < maxReflect) {
+                        me(pt, ref, isectNew);
+                    }
                 } else {
-                    var far = pt.clone().add(ref.multiplyScalar(9999.0));
-                    this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, far.x, far.y, far.z]);
+                    var inf = src.clone().add(ref.multiplyScalar(self._infLen));
+                    arr.push(inf.x);
+                    arr.push(inf.y);
+                    arr.push(inf.z);
                 }
-            }
+            })(src, dir, isect);
+            return arr;
         }
     }]);
 

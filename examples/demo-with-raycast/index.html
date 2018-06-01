@@ -10,6 +10,7 @@
     <script src="./three.min.js"></script>
     <script src="./stats.min.js"></script>
     <script src="./OrbitControls.js"></script>
+    <script src="./dat.gui.min.js"></script>
 
     <!-- <script src="../../dist/three-laser-pointer.min.js"></script> -->
     <script src="../../lib/three-laser-pointer.js"></script>
@@ -67,10 +68,12 @@
                 new THREE.BoxGeometry( 8, 6.0, 4.5 ),
                 new THREE.MeshPhongMaterial({
                     color: 0xc0e0c0,
-                    // wireframe: true,
                     side: THREE.BackSide,
+                    opacity: 1,
+                    transparent: true,
                 }));
             walls.rotation.y = Math.PI / 6;
+            walls.name = "walls";
             scene.add(walls);
 
             //======== add cubes
@@ -149,7 +152,84 @@
             };
         })();
 
-        const eventDrivenRender = 1;
+
+        const walls = data.scene.getObjectByName("walls");
+        const defaults = {
+            x: walls.position.x,
+            y: walls.position.y,
+            z: walls.position.z,
+            color: `#${walls.material.color.getHexString()}`,
+            side: walls.material.side,
+            opacity: walls.material.opacity,
+            transparent: walls.material.transparent,
+            visible: true,
+            material: "Phong",
+        };
+
+        const updateMesh = (params, mesh) => {
+            let value = params.material;
+            let newMaterial;
+            if (value == "Basic")
+                newMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            else if (value == "Lambert")
+                newMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
+            else if (value == "Phong")
+                newMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+            else // (value == "Wireframe")
+                newMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
+            mesh.material = newMaterial;
+
+            mesh.position.x = params.x;
+            mesh.position.y = params.y;
+            mesh.position.z = params.z;
+            mesh.material.color.setHex(params.color.replace("#", "0x"));
+            mesh.material.side = params.side;
+            mesh.material.opacity = params.opacity;
+            mesh.material.transparent = true;
+            mesh.visible = params.visible;
+        };
+        const initParams = (params) => {
+            Object.assign(params, defaults);
+            params.reset = () => {
+                initParams(params);
+                updateMesh(params, walls);
+            }
+        };
+        const initGui = (gui, params, mesh) => {
+            let folder = gui.addFolder('Position');
+            let X = folder.add(params, 'x').min(-2).max(2).step(.1).listen();
+            let Y = folder.add(params, 'y').min(-2).max(2).step(.1).listen();
+            let Z = folder.add(params, 'z').min(-2).max(2).step(.1).listen();
+            folder.open();
+
+            X.onChange(function(value) { mesh.position.x = value; });
+            Y.onChange(function(value) { mesh.position.y = value; });
+            Z.onChange(function(value) { mesh.position.z = value; });
+
+            let color = gui.addColor(params, 'color').name('Color').listen();
+            // onFinishChange
+            color.onChange(function(value) { mesh.material.color.setHex(value.replace("#", "0x")); });
+
+            let opacity = gui.add(params, 'opacity').min(0).max(1).step(0.01).name('Opacity').listen();
+            opacity.onChange(function(value) { mesh.material.opacity = value; });
+
+            let material = gui.add(params, 'material', ["Basic", "Lambert", "Phong", "Wireframe"]).name('Material Type').listen();
+            material.onChange(function(value) { updateMesh(params, mesh); });
+
+            let visible = gui.add(params, 'visible').name('Visible?').listen();
+            visible.onChange(function(value) { mesh.visible = value; });
+
+            gui.add(params, 'reset').name("Reset");
+        };
+
+        const gui = new dat.GUI();
+        const params = {};
+        initParams(params);
+        initGui(gui, params, walls);
+        gui.open();
+
+
+        const eventDrivenRender = 0;
 
         let stats = new Stats();
         document.body.appendChild(stats.dom);
