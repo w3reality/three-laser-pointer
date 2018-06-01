@@ -165,7 +165,7 @@
             visible: true,
             material: "Phong",
         };
-        const updateWalls = (params, mesh) => {
+        const updateWalls = (mesh, params) => {
             let value = params.material;
             let newMaterial;
             if (value == "Basic")
@@ -208,7 +208,7 @@
             opacity.onChange(function(value) { mesh.material.opacity = value; });
 
             let material = gui.add(params, 'material', ["Basic", "Lambert", "Phong", "Wireframe"]).name('Material Type').listen();
-            material.onChange(function(value) { updateMesh(params, mesh); });
+            material.onChange(function(value) { updateWalls(mesh, params); });
 
             let visible = gui.add(params, 'visible').name('Visible?').listen();
             visible.onChange(function(value) { mesh.visible = value; });
@@ -228,7 +228,7 @@
                 Object.assign(ps, defaults);
                 ps.reset = () => {
                     self.initParams(defaults, mesh, updateMesh);
-                    updateMesh(ps, mesh);
+                    updateMesh(mesh, ps);
                 };
                 ps.mesh = mesh;
             }
