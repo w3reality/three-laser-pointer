@@ -187,36 +187,6 @@
             mesh.material.transparent = true;
             mesh.visible = params.visible;
         };
-
-        class MeshGui {
-            constructor(init) {
-                this.params = {};
-                this.gui = new dat.GUI();
-                this.init = init;
-            }
-            initParams(defaults, mesh, updateMesh) {
-                let params = this.params;
-                Object.assign(params, defaults);
-                params.reset = () => {
-                    initParams(params, defaults, mesh, updateMesh);
-                    updateMesh(params, mesh);
-                };
-                params.mesh = mesh;
-            }
-            open() {
-                this.init(this.gui, this.params);
-                this.gui.open();
-            }
-        }
-
-        const initParams = (params, defaults, mesh, updateMesh) => {
-            Object.assign(params, defaults);
-            params.reset = () => {
-                initParams(params, defaults, mesh, updateMesh);
-                updateMesh(params, mesh);
-            };
-            params.mesh = mesh;
-        };
         const initGuiWalls = (gui, params) => {
             let mesh = params.mesh;
 
@@ -246,15 +216,31 @@
             gui.add(params, 'reset').name("Reset");
         };
 
+        class MeshGui {
+            constructor(init) {
+                this.params = {};
+                this.gui = new dat.GUI();
+                this.init = init;
+            }
+            initParams(defaults, mesh, updateMesh) {
+                const self = this;
+                const params = self.params;
+                Object.assign(params, defaults);
+                params.reset = () => {
+                    self.initParams(defaults, mesh, updateMesh);
+                    updateMesh(params, mesh);
+                };
+                params.mesh = mesh;
+            }
+            open() {
+                this.init(this.gui, this.params);
+                this.gui.open();
+            }
+        }
+
         const mgui = new MeshGui(initGuiWalls);
         mgui.initParams(defaultsWalls, walls, updateWalls);
         mgui.open();
-        //========
-        // const gui = new dat.GUI();
-        // const params = {};
-        // initParams(params, defaultsWalls, walls, updateWalls);
-        // initGuiWalls(gui, params);
-        // gui.open();
         //---- end gui
 
         //---- begin render
