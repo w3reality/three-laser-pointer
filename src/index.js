@@ -11,25 +11,15 @@ class Line extends THREE.Line {
             color: color,
         });
         super(geometry, material);
+
+        this._maxPoints = maxPoints;
+        this._numPoints = 0;
     }
     _frustumCullingWorkaround() {
         // https://stackoverflow.com/questions/36497763/three-js-line-disappears-if-one-point-is-outside-of-the-cameras-view
         this.geometry.computeBoundingSphere();
         //----
         // this.frustumCulled = false;
-    }
-    updatePointsTwo(x0, y0, z0, x1, y1, z1) {
-        let attrPos = this.geometry.attributes.position;
-        if (attrPos.count < 2) return;
-        attrPos.array[0] = x0;
-        attrPos.array[1] = y0;
-        attrPos.array[2] = z0;
-        attrPos.array[3] = x1;
-        attrPos.array[4] = y1;
-        attrPos.array[5] = z1;
-        attrPos.needsUpdate = true;
-        this.geometry.setDrawRange(0, 2);
-        this._frustumCullingWorkaround();
     }
 
     _getPointsRandomWalk(numPoints) {
@@ -47,6 +37,11 @@ class Line extends THREE.Line {
         }
         return positions;
     }
+    getPoints() {
+        let arr = [...this.geometry.attributes.position.array]; // dup
+        arr.length = this._numPoints * 3; // truncate
+        return arr;
+    }
     updatePoints(arr) {
         let attrPos = this.geometry.attributes.position;
         let maxPoints = attrPos.count;
@@ -63,6 +58,10 @@ class Line extends THREE.Line {
         attrPos.needsUpdate = true;
         this.geometry.setDrawRange(0, numPoints);
         this._frustumCullingWorkaround();
+        this._numPoints = numPoints;
+    }
+    clearPoints() {
+        this.updatePoints([]);
     }
     updatePointsRandomWalk(numPoints) {
         this.updatePoints(this._getPointsRandomWalk(numPoints));
@@ -70,10 +69,19 @@ class Line extends THREE.Line {
 }
 
 class Laser extends Line {
-    constructor(color=0xff0000) {
-        super(16, color);
+    constructor(options={}) {
+        // https://stackoverflow.com/questions/9602449/a-javascript-design-pattern-for-options-with-default-values
+        let defaults = {
+            color: 0xff0000,
+            maxPoints: 256,
+            infLength: 9999,
+        };
+        let actual = Object.assign({}, defaults, options);
+        super(actual.maxPoints, actual.color);
+
         this._src = new THREE.Vector3(0, 0, 0);
         this._raycaster = new THREE.Raycaster();
+        this._infLen = actual.infLength;
     }
     setVisibility(tf) {
         this.visible = tf;
@@ -85,10 +93,10 @@ class Laser extends Line {
     getSource() {
         return this._src.clone();
     }
-    computeDirection(src, target) {
+    direct(src, target) {
         return target.clone().sub(src).normalize();
     }
-    computeReflection(d, n) {
+    reflect(d, n) {
         // r = d - 2 * (d.n) n;  https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
         return d.clone().sub(n.clone().multiplyScalar(2*d.dot(n)));
     }
@@ -111,8 +119,9 @@ class Laser extends Line {
     }
     point(pt, color=null) {
         // console.log("point():", this._src, pt);
-        this.updatePointsTwo(
-            this._src.x, this._src.y, this._src.z, pt.x, pt.y, pt.z);
+        this.updatePoints([
+            this._src.x, this._src.y, this._src.z,
+            pt.x, pt.y, pt.z]);
         if (color) {
             this.material.color.setHex(color);
         }
@@ -121,30 +130,41 @@ class Laser extends Line {
         this.point(pt, color);
 
         let src = this.getSource();
-        let dir = this.computeDirection(src, pt);
+        let dir = this.direct(src, pt);
         let isect = this.raycast(src, dir, meshes);
         if (!isect) return;
 
-        let meshes2 = [...meshes].filter((m) => {
-            return m !== isect.object;
-        });
-        let ref = this.computeReflection(dir, isect.face.normal);
-        let isect2 = this.raycast(pt, ref, meshes2);
-        console.log('isect2:', isect2);
-        if (isect2 !== null) {
-            this.updatePoints([
-                src.x, src.y, src.z,
-                pt.x, pt.y, pt.z,
-                isect2.point.x, isect2.point.y, isect2.point.z,
-            ]);
-        } else {
-            let far = pt.clone().add(ref.multiplyScalar(9999.0));
-            this.updatePoints([
-                src.x, src.y, src.z,
-                pt.x, pt.y, pt.z,
-                far.x, far.y, far.z,
-            ]);
-        }
+        let arrRefs = this.computeReflections(
+            pt, dir, isect.face.normal, isect.object, meshes);
+        this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, ...arrRefs]);
+    }
+    computeReflections(src, dir, normal, meshExclude, meshes) {
+        const self = this;
+        const arr = [];
+        // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
+        // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
+        (function me (src, dir, normal, meshExclude) {
+            let meshesCurrent = [...meshes].filter((m) => {
+                return m !== meshExclude;
+            });
+            let ref = self.reflect(dir, normal);
+            let isect = self.raycast(src, ref, meshesCurrent);
+            // console.log('isect:', isect);
+
+            if (isect !== null) {
+                let pt = isect.point;
+                arr.push(pt.x);
+                arr.push(pt.y);
+                arr.push(pt.z);
+                me(pt, ref, isect.face.normal, isect.object);
+            } else {
+                let inf = src.clone().add(ref.multiplyScalar(self._infLen));
+                arr.push(inf.x);
+                arr.push(inf.y);
+                arr.push(inf.z);
+            }
+        })(src, dir, normal, meshExclude);
+        return arr;
     }
 }
 

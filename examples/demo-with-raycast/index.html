@@ -104,7 +104,9 @@
                 scene.add(line);
             }
 
-            let laser = new LaserPointer.Laser(0xffffff);
+            let laser = new LaserPointer.Laser({
+                color: 0xffffff
+            });
             scene.add(laser);
 
             const meshes = [];
@@ -127,12 +129,11 @@
                         // laser.point(pt, 0xff0000);
                         //----
                         laser.pointWithRaytrace(pt, meshes, 0xff0000);
-
-                        laser.setVisibility(true);
                     } else {
                         console.log('no isects');
-                        laser.setVisibility(false);
+                        laser.clearPoints();
                     }
+                    console.log('laser points:', laser.getPoints());
                 },
             };
         })();
