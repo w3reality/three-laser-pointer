@@ -62,6 +62,16 @@
             light.position.set( 1, 1, 1 ).normalize();
             scene.add( light );
 
+            //======== add walls
+            scene.add(new THREE.Mesh(
+                new THREE.BoxGeometry( 8, 8, 8 ),
+                new THREE.MeshPhongMaterial({
+                    color: 0xc0e0c0,
+                    // wireframe: true,
+                    side: THREE.BackSide,
+                }))
+            );
+
             //======== add cubes
             let geomBox = new THREE.BoxGeometry( 1/2, 1/2, 1/2 );
             const gridLen = 2;
@@ -138,6 +148,8 @@
             };
         })();
 
+        const eventDrivenRender = 1;
+
         renderer.domElement.addEventListener('mousemove', (e) => {
             // https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
             let rect = canvas.getBoundingClientRect();
@@ -145,29 +157,36 @@
             let my = e.clientY - rect.top;
             // console.log('mouse:', mx, my, canvas.width, canvas.height);
             data.pick(mx, my, camera);
+            if (eventDrivenRender) {
+                render();
+            }
         });
-
+//TODO remove setVisibility
+        let stats = new Stats();
+        document.body.appendChild(stats.dom);
         let render = () => {
+            stats.update();
+            resizeCanvasToDisplaySize();
             renderer.render(data.scene, camera);
         };
 
-        let stats = new Stats();
-        document.body.appendChild(stats.dom);
+        if (eventDrivenRender) {
+            render(); // first time
+            controls.addEventListener('change', render);
+        } else {
 
-        let stop = false;
-        setTimeout(() => { stop = true; }, 5*60*1000);
-        let animate = () => {
-            stats.update();
-            resizeCanvasToDisplaySize();
-
-            if (stop) {
-                console.log('animate(): stopping');
-                return;
-            }
-            requestAnimationFrame(animate);
-            render();
-        };
-        animate();
+            let stop = false;
+            setTimeout(() => { stop = true; }, 5*60*1000);
+            let animate = () => {
+                if (stop) {
+                    console.log('animate(): stopping');
+                    return;
+                }
+                requestAnimationFrame(animate);
+                render();
+            };
+            animate();
+        }
     </script>
 </body>
 </html>

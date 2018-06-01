@@ -100,13 +100,21 @@ class Laser extends Line {
         // r = d - 2 * (d.n) n;  https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
         return d.clone().sub(n.clone().multiplyScalar(2*d.dot(n)));
     }
-    _raycast(meshes, recursive) {
-        let intersects = this._raycaster.intersectObjects(meshes, recursive);
-        return intersects.length > 0 ? intersects[0] : null;
+    _raycast(meshes, recursive, faceExclude) {
+        let isects = this._raycaster.intersectObjects(meshes, recursive);
+        if (faceExclude) {
+            for (let i = 0; i < isects.length; i++) {
+                if (isects[i].face != faceExclude) {
+                    return isects[i];
+                }
+            }
+            return null;
+        }
+        return isects.length > 0 ? isects[0] : null;
     }
-    raycast(origin, direction, meshes) {
+    raycast(origin, direction, meshes, faceExclude=null) {
         this._raycaster.set(origin, direction);
-        return this._raycast(meshes, false);
+        return this._raycast(meshes, false, faceExclude);
     }
     raycastFromCamera(mx, my, width, height, cam, meshes, recursive=false) {
         let mouse = new THREE.Vector2( // normalized (-1 to +1)
@@ -115,7 +123,7 @@ class Laser extends Line {
         // https://threejs.org/docs/#api/core/Raycaster
         // update the picking ray with the camera and mouse position
         this._raycaster.setFromCamera(mouse, cam);
-        return this._raycast(meshes, recursive);
+        return this._raycast(meshes, recursive, null);
     }
     point(pt, color=null) {
         // console.log("point():", this._src, pt);
@@ -126,7 +134,7 @@ class Laser extends Line {
             this.material.color.setHex(color);
         }
     }
-    pointWithRaytrace(pt, meshes=[], color=null) { // TODO trace level
+    pointWithRaytrace(pt, meshes=[], color=null, maxReflect=16) {
         this.point(pt, color);
 
         let src = this.getSource();
@@ -135,35 +143,34 @@ class Laser extends Line {
         if (!isect) return;
 
         let arrRefs = this.computeReflections(
-            pt, dir, isect.face.normal, isect.object, meshes);
+            pt, dir, isect.face, meshes, maxReflect);
         this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, ...arrRefs]);
     }
-    computeReflections(src, dir, normal, meshExclude, meshes) {
+    computeReflections(src, dir, face, meshes, maxReflect) {
         const self = this;
         const arr = [];
         // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
         // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
-        (function me (src, dir, normal, meshExclude) {
-            let meshesCurrent = [...meshes].filter((m) => {
-                return m !== meshExclude;
-            });
-            let ref = self.reflect(dir, normal);
-            let isect = self.raycast(src, ref, meshesCurrent);
+        (function me (src, dir, face) {
+            let ref = self.reflect(dir, face.normal);
+            let isect = self.raycast(src, ref, meshes, face);
             // console.log('isect:', isect);
 
-            if (isect !== null) {
+            if (isect) {
                 let pt = isect.point;
                 arr.push(pt.x);
                 arr.push(pt.y);
                 arr.push(pt.z);
-                me(pt, ref, isect.face.normal, isect.object);
+                if (arr.length / 3 < maxReflect) {
+                    me(pt, ref, isect.face);
+                }
             } else {
                 let inf = src.clone().add(ref.multiplyScalar(self._infLen));
                 arr.push(inf.x);
                 arr.push(inf.y);
                 arr.push(inf.z);
             }
-        })(src, dir, normal, meshExclude);
+        })(src, dir, face);
         return arr;
     }
 }
