@@ -152,7 +152,7 @@
             };
         })();
 
-
+        //---- begin gui
         const walls = data.scene.getObjectByName("walls");
         const defaults = {
             x: walls.position.x,
@@ -227,8 +227,9 @@
         initParams(params);
         initGui(gui, params, walls);
         gui.open();
+        //---- end gui
 
-
+        //---- begin render
         const eventDrivenRender = 0;
 
         let stats = new Stats();
@@ -267,6 +268,7 @@
             };
             animate();
         }
+        //---- end render
     </script>
 </body>
 </html>
