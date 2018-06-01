@@ -154,7 +154,7 @@
 
         //---- begin gui
         const walls = data.scene.getObjectByName("walls");
-        const defaults = {
+        const defaultsWalls = {
             x: walls.position.x,
             y: walls.position.y,
             z: walls.position.z,
@@ -165,8 +165,7 @@
             visible: true,
             material: "Phong",
         };
-
-        const updateMesh = (params, mesh) => {
+        const updateWalls = (params, mesh) => {
             let value = params.material;
             let newMaterial;
             if (value == "Basic")
@@ -188,14 +187,39 @@
             mesh.material.transparent = true;
             mesh.visible = params.visible;
         };
-        const initParams = (params) => {
+
+        class MeshGui {
+            constructor(init) {
+                this.params = {};
+                this.gui = new dat.GUI();
+                this.init = init;
+            }
+            initParams(defaults, mesh, updateMesh) {
+                let params = this.params;
+                Object.assign(params, defaults);
+                params.reset = () => {
+                    initParams(params, defaults, mesh, updateMesh);
+                    updateMesh(params, mesh);
+                };
+                params.mesh = mesh;
+            }
+            open() {
+                this.init(this.gui, this.params);
+                this.gui.open();
+            }
+        }
+
+        const initParams = (params, defaults, mesh, updateMesh) => {
             Object.assign(params, defaults);
             params.reset = () => {
-                initParams(params);
-                updateMesh(params, walls);
-            }
+                initParams(params, defaults, mesh, updateMesh);
+                updateMesh(params, mesh);
+            };
+            params.mesh = mesh;
         };
-        const initGui = (gui, params, mesh) => {
+        const initGuiWalls = (gui, params) => {
+            let mesh = params.mesh;
+
             let folder = gui.addFolder('Position');
             let X = folder.add(params, 'x').min(-2).max(2).step(.1).listen();
             let Y = folder.add(params, 'y').min(-2).max(2).step(.1).listen();
@@ -222,11 +246,15 @@
             gui.add(params, 'reset').name("Reset");
         };
 
-        const gui = new dat.GUI();
-        const params = {};
-        initParams(params);
-        initGui(gui, params, walls);
-        gui.open();
+        const mgui = new MeshGui(initGuiWalls);
+        mgui.initParams(defaultsWalls, walls, updateWalls);
+        mgui.open();
+        //========
+        // const gui = new dat.GUI();
+        // const params = {};
+        // initParams(params, defaultsWalls, walls, updateWalls);
+        // initGuiWalls(gui, params);
+        // gui.open();
         //---- end gui
 
         //---- begin render
