@@ -224,13 +224,13 @@
             }
             initParams(defaults, mesh, updateMesh) {
                 const self = this;
-                const params = self.params;
-                Object.assign(params, defaults);
-                params.reset = () => {
+                const ps = self.params;
+                Object.assign(ps, defaults);
+                ps.reset = () => {
                     self.initParams(defaults, mesh, updateMesh);
-                    updateMesh(params, mesh);
+                    updateMesh(ps, mesh);
                 };
-                params.mesh = mesh;
+                ps.mesh = mesh;
             }
             open() {
                 this.init(this.gui, this.params);
