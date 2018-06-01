@@ -63,14 +63,15 @@
             scene.add( light );
 
             //======== add walls
-            scene.add(new THREE.Mesh(
+            let walls = new THREE.Mesh(
                 new THREE.BoxGeometry( 8, 8, 8 ),
                 new THREE.MeshPhongMaterial({
                     color: 0xc0e0c0,
                     // wireframe: true,
                     side: THREE.BackSide,
-                }))
-            );
+                }));
+            walls.rotation.y = Math.PI / 4;
+            scene.add(walls);
 
             //======== add cubes
             let geomBox = new THREE.BoxGeometry( 1/2, 1/2, 1/2 );
@@ -149,6 +150,13 @@
         })();
 
         const eventDrivenRender = 1;
+        let stats = new Stats();
+        document.body.appendChild(stats.dom);
+        let render = () => {
+            stats.update();
+            resizeCanvasToDisplaySize();
+            renderer.render(data.scene, camera);
+        };
 
         renderer.domElement.addEventListener('mousemove', (e) => {
             // https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
@@ -161,20 +169,11 @@
                 render();
             }
         });
-//TODO remove setVisibility
-        let stats = new Stats();
-        document.body.appendChild(stats.dom);
-        let render = () => {
-            stats.update();
-            resizeCanvasToDisplaySize();
-            renderer.render(data.scene, camera);
-        };
 
         if (eventDrivenRender) {
             render(); // first time
             controls.addEventListener('change', render);
         } else {
-
             let stop = false;
             setTimeout(() => { stop = true; }, 5*60*1000);
             let animate = () => {

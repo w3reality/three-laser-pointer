@@ -83,9 +83,6 @@ class Laser extends Line {
         this._raycaster = new THREE.Raycaster();
         this._infLen = actual.infLength;
     }
-    setVisibility(tf) {
-        this.visible = tf;
-    }
     setSource(src, camera=null) {
         // in case camera is given, treat (x, y, z) as in the camera coords
         this._src = camera ? src.clone().applyMatrix4(camera.matrixWorld) : src.clone();
@@ -143,26 +140,31 @@ class Laser extends Line {
         if (!isect) return;
 
         let arrRefs = this.computeReflections(
-            pt, dir, isect.face, meshes, maxReflect);
+            pt, dir, isect, meshes, maxReflect);
         this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, ...arrRefs]);
     }
-    computeReflections(src, dir, face, meshes, maxReflect) {
+    computeReflections(src, dir, isect, meshes, maxReflect) {
         const self = this;
         const arr = [];
         // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
         // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
-        (function me (src, dir, face) {
-            let ref = self.reflect(dir, face.normal);
-            let isect = self.raycast(src, ref, meshes, face);
-            // console.log('isect:', isect);
+        (function me (src, dir, isect) {
+            // https://stackoverflow.com/questions/39082673/get-face-global-normal-in-three-js
+            // console.log('local normal:', isect.face.normal);
+            let normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
+            let normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
 
-            if (isect) {
-                let pt = isect.point;
+            let ref = self.reflect(dir, normalWorld);
+            let isectNew = self.raycast(src, ref, meshes, isect.face);
+            // console.log('isectNew:', isectNew);
+
+            if (isectNew) {
+                let pt = isectNew.point;
                 arr.push(pt.x);
                 arr.push(pt.y);
                 arr.push(pt.z);
                 if (arr.length / 3 < maxReflect) {
-                    me(pt, ref, isect.face);
+                    me(pt, ref, isectNew);
                 }
             } else {
                 let inf = src.clone().add(ref.multiplyScalar(self._infLen));
@@ -170,7 +172,7 @@ class Laser extends Line {
                 arr.push(inf.y);
                 arr.push(inf.z);
             }
-        })(src, dir, face);
+        })(src, dir, isect);
         return arr;
     }
 }
