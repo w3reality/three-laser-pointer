@@ -168,7 +168,7 @@
         })();
 
         //---- begin gui
-        class DataGui {
+        class DatGuiDefaults {
             constructor(data) {
                 this.gui = new dat.GUI();
                 this.data = data;
@@ -190,7 +190,7 @@
             }
         }
 
-        class WallsGui extends DataGui {
+        class WallsGui extends DatGuiDefaults {
             _updateWalls(mesh, params) {
                 let value = params.material;
                 let newMaterial;
@@ -283,7 +283,7 @@
         }
 
         if (1) {
-            class DemoGui extends DataGui {
+            class DemoGui extends DatGuiDefaults {
                 // override
                 initGui(gui, data, params) {
                     let controller = null;
