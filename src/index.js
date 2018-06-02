@@ -46,7 +46,7 @@ class Line extends THREE.Line {
         let attrPos = this.geometry.attributes.position;
         let maxPoints = attrPos.count;
         let numPoints = arr.length / 3;
-        console.log(`numPoints/maxPoints: ${numPoints}/${maxPoints}`);
+        // console.log(`numPoints/maxPoints: ${numPoints}/${maxPoints}`);
         if (numPoints > maxPoints) {
             numPoints = maxPoints;
         }
@@ -133,6 +133,7 @@ class Laser extends Line {
     }
     pointWithRaytrace(pt, meshes=[], color=null, maxReflect=16) {
         this.point(pt, color);
+        if (maxReflect < 1) return;
 
         let src = this.getSource();
         let dir = this.direct(src, pt);

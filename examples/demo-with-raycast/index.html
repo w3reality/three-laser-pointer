@@ -112,7 +112,7 @@
             }
 
             //======== add laser
-            if (1) {
+            if (0) {
                 let line = new LaserPointer.Line(32, 0x00ffff);
                 line.updatePointsRandomWalk(32);
                 scene.add(line);
@@ -130,25 +130,40 @@
                 }
             });
 
+            const config = { // defaults
+                color: "0xff0000",
+                source: "VR-like",
+                raytrace: true,
+                maxReflect: 16,
+            }
             return {
                 scene: scene,
                 pick: (mx, my, cam) => {
                     let isect = laser.raycastFromCamera(
                         mx, my, canvas.width, canvas.height, cam, meshes);
                     if (isect !== null) {
-                        console.log('isect:', isect);
+                        // console.log('isect:', isect);
                         let pt = isect.point;
-                        laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), cam);
 
-                        // laser.point(pt, 0xff0000);
-                        //----
-                        laser.pointWithRaytrace(pt, meshes, 0xff0000);
+                        if (config.source == "VR-like") {
+                            laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), cam);
+                        } else {
+                            laser.setSource(new THREE.Vector3(0, 0, 0));
+                        }
+
+                        let color = config.color.replace("#", "0x");
+                        if (config.raytrace) {
+                            laser.pointWithRaytrace(pt, meshes, color, config.maxReflect);
+                        } else {
+                            laser.point(pt, color);
+                        }
                     } else {
-                        console.log('no isects');
+                        // console.log('no isects');
                         laser.clearPoints();
                     }
                     // console.log('laser points:', laser.getPoints());
                 },
+                config: config,
             };
         })();
 
@@ -160,7 +175,8 @@
                 this.params = {};
                 this.defaults = {};
             }
-            initGui(gui, data, params) { // override me
+            // override me
+            initGui(gui, data, params) {
                 // implementation of gui given data and params
             }
             setDefaults(defaults) {
@@ -207,9 +223,9 @@
                 let Z = folder.add(params, 'z').min(-2).max(2).step(.1); //.listen();
                 folder.open();
 
-                X.onChange(function(value) { mesh.position.x = value; });
-                Y.onChange(function(value) { mesh.position.y = value; });
-                Z.onChange(function(value) { mesh.position.z = value; });
+                X.onChange((value) => { mesh.position.x = value; });
+                Y.onChange((value) => { mesh.position.y = value; });
+                Z.onChange((value) => { mesh.position.z = value; });
 
                 let color = gui.addColor(params, 'color')
                     // .name('Color').listen(); // cpu high!!
@@ -248,21 +264,70 @@
                 });
             }
         }
-        const walls = data.scene.getObjectByName("walls");
-        const wg = new WallsGui(walls);
-        wg.setDefaults({
-            x: walls.position.x,
-            y: walls.position.y,
-            z: walls.position.z,
-            color: `#${walls.material.color.getHexString()}`,
-            side: walls.material.side,
-            opacity: walls.material.opacity,
-            transparent: walls.material.transparent,
-            visible: true,
-            material: "Phong",
-            reset: () => {},
-        });
-        wg.gui.open();
+        if (0) {
+            const walls = data.scene.getObjectByName("walls");
+            const wg = new WallsGui(walls);
+            wg.setDefaults({
+                x: walls.position.x,
+                y: walls.position.y,
+                z: walls.position.z,
+                color: `#${walls.material.color.getHexString()}`,
+                side: walls.material.side,
+                opacity: walls.material.opacity,
+                transparent: walls.material.transparent,
+                visible: true,
+                material: "Phong",
+                reset: () => {},
+            });
+            // wg.gui.close();
+        }
+
+        if (1) {
+            class DemoGui extends DataGui {
+                // override
+                initGui(gui, data, params) {
+                    let controller = null;
+
+                    controller = gui.addColor(params, 'color').name('Color');
+                    controller.onChange((value) => { // or onFinishChange
+                        data.config.color = value;
+                    });
+
+                    controller = gui.add(params, 'source',
+                        ["(0, 0, 0)", "VR-like"]).name('Source');
+                    controller.onChange((value) => {
+                        data.config.source = value;
+                    });
+
+                    controller = gui.add(params, 'raytrace').name('Raytrace');
+                    controller.onChange((value) => {
+                        data.config.raytrace = value;
+                    });
+
+                    controller = gui.add(params, 'maxReflect').min(0).max(32).step(1)
+                        .name('maxReflect');
+                    controller.onChange((value) => {
+                        data.config.maxReflect = value;
+                    });
+
+                    controller = gui.add(params, 'reset').name("Reset");
+                    controller.onChange((value) => {
+                        this.applyDefaults();
+                        Object.assign(data.config, params);
+                    });
+                }
+            }
+            const dg = new DemoGui(data);
+            dg.setDefaults({
+                color: data.config.color.replace("0x", "#"),
+                source: data.config.source,
+                raytrace: data.config.raytrace,
+                maxReflect: data.config.maxReflect,
+                reset: () => {},
+            });
+        }
+
+
         //---- end gui
 
         //---- begin render
