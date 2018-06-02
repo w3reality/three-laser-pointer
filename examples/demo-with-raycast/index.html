@@ -155,12 +155,14 @@
         //---- begin gui
         class DataGui {
             constructor(data) {
-                this.params = {};
-                this.data = data;
                 this.gui = new dat.GUI();
+                this.data = data;
+                this.params = {};
                 this.defaults = {};
             }
-            initGui(gui, data, params) {} // override me
+            initGui(gui, data, params) { // override me
+                // implementation of gui given data and params
+            }
             setDefaults(defaults) {
                 this.defaults = defaults;
                 Object.assign(this.params, defaults);
