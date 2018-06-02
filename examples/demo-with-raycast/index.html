@@ -153,116 +153,25 @@
         })();
 
         //---- begin gui
-        const walls = data.scene.getObjectByName("walls");
-        const defaultsWalls = {
-            x: walls.position.x,
-            y: walls.position.y,
-            z: walls.position.z,
-            color: `#${walls.material.color.getHexString()}`,
-            side: walls.material.side,
-            opacity: walls.material.opacity,
-            transparent: walls.material.transparent,
-            visible: true,
-            material: "Phong",
-            reset: () => {},
-        };
-        const _updateWalls = (mesh, params) => {
-            let value = params.material;
-            let newMaterial;
-            if (value == "Basic")
-                newMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
-            else if (value == "Lambert")
-                newMaterial = new THREE.MeshLambertMaterial({ color: 0x000000 });
-            else if (value == "Phong")
-                newMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
-            else // (value == "Wireframe")
-                newMaterial = new THREE.MeshBasicMaterial({ wireframe: true });
-            mesh.material = newMaterial;
-
-            mesh.position.x = params.x;
-            mesh.position.y = params.y;
-            mesh.position.z = params.z;
-            mesh.material.color.setHex(params.color.replace("#", "0x"));
-            mesh.material.side = params.side;
-            mesh.material.opacity = params.opacity;
-            mesh.material.transparent = true;
-            mesh.visible = params.visible;
-        };
-        const initGuiWalls = (gui, mesh, params) => {
-            let folder = gui.addFolder('Position');
-            let X = folder.add(params, 'x').min(-2).max(2).step(.1); //.listen();
-            let Y = folder.add(params, 'y').min(-2).max(2).step(.1); //.listen();
-            let Z = folder.add(params, 'z').min(-2).max(2).step(.1); //.listen();
-            folder.open();
-
-            X.onChange(function(value) { mesh.position.x = value; });
-            Y.onChange(function(value) { mesh.position.y = value; });
-            Z.onChange(function(value) { mesh.position.z = value; });
-
-            let color = gui.addColor(params, 'color')
-                // .name('Color').listen(); // cpu high!!
-                .name('Color');
-            color.onChange((value) => { // or onFinishChange
-                mesh.material.color.setHex(value.replace("#", "0x"));
-            });
-
-            let opacity = gui.add(params, 'opacity').min(0).max(1).step(0.01)
-                // .name('Opacity').listen(); cpu high!!
-                .name('Opacity');
-            opacity.onChange((value) => {
-                mesh.material.opacity = value;
-            });
-
-            let material = gui.add(params, 'material', ["Basic", "Lambert", "Phong", "Wireframe"])
-                // .name('Material Type').listen(); cpu high!!
-                .name('Material Type');
-            material.onChange((value) => {
-                _updateWalls(mesh, params);
-            });
-
-            let visible = gui.add(params, 'visible')
-                // .name('Visible?').listen(); cpu high!!
-                .name('Visible?');
-            visible.onChange((value) => {
-                mesh.visible = value;
-            });
-
-            let reset = gui.add(params, 'reset').name("Reset");
-            // console.log('reset', reset);
-            reset.onChange((value) => {
-                console.log('value:', value); // undefined
-                Object.assign(params, defaultsWalls);
-                gui.updateDisplay();
-                _updateWalls(mesh, params);
-            });
-        };
-
-        class DataGui000 {
-            constructor(initGui, data) {
-                this.params = {};
-                this.data = data;
-                this.gui = new dat.GUI();
-                this.initGui = initGui; // (gui, data, params) => {}
-            }
-            setParams(params) {
-                Object.assign(this.params, params);
-                this.initGui(this.gui, this.data, this.params);
-            }
-            initGui(gui, data, params) {} // override me
-        }
-
         class DataGui {
             constructor(data) {
                 this.params = {};
                 this.data = data;
                 this.gui = new dat.GUI();
-            }
-            setParams(params) {
-                Object.assign(this.params, params);
-                this.initGui(this.gui, this.data, this.params);
+                this.defaults = {};
             }
             initGui(gui, data, params) {} // override me
+            setDefaults(defaults) {
+                this.defaults = defaults;
+                Object.assign(this.params, defaults);
+                this.initGui(this.gui, this.data, this.params);
+            }
+            applyDefaults() {
+                Object.assign(this.params, this.defaults);
+                this.gui.updateDisplay();
+            }
         }
+
         class WallsGui extends DataGui {
             _updateWalls(mesh, params) {
                 let value = params.material;
@@ -332,17 +241,26 @@
                 // console.log('reset', reset);
                 reset.onChange((value) => {
                     console.log('value:', value); // undefined
-                    Object.assign(params, defaultsWalls);
-                    gui.updateDisplay();
+                    this.applyDefaults();
                     this._updateWalls(mesh, params);
                 });
             }
         }
-
-        // const mgui = new DataGui(initGuiWalls, walls);
-        const mgui = new WallsGui(walls);
-        mgui.setParams(defaultsWalls);
-        mgui.gui.open();
+        const walls = data.scene.getObjectByName("walls");
+        const wg = new WallsGui(walls);
+        wg.setDefaults({
+            x: walls.position.x,
+            y: walls.position.y,
+            z: walls.position.z,
+            color: `#${walls.material.color.getHexString()}`,
+            side: walls.material.side,
+            opacity: walls.material.opacity,
+            transparent: walls.material.transparent,
+            visible: true,
+            material: "Phong",
+            reset: () => {},
+        });
+        wg.gui.open();
         //---- end gui
 
         //---- begin render
