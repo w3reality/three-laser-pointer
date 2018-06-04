@@ -30,6 +30,7 @@
     },
     "homepage": "https://github.com/w3reality/three-laser-pointer",
     "dependencies": {
+        "dat-gui-defaults": "^1.0.0",
         "three": "^0.92.0"
     },
     "devDependencies": {
