@@ -122,14 +122,19 @@ let data = (() => {
                     .setMaterials(materials)
                     .setPath('../male02/')
                     .load('male02.obj', (object) => {
-                        object.position.y = - 95;
+                        // console.log('object:', object);
                         object.name = "male02";
-                        console.log('object:', object);
+                        object.position.y = - 3.0;
+                        object.children.forEach((mesh) => {
+                            // https://stackoverflow.com/questions/24723471/three-js-scale-model-with-scale-set-or-increase-model-size
+                            mesh.geometry.scale(0.05, 0.05, 0.05);
+                            // mesh.scale.set(0.05, 0.05, 0.05);
+                        })
                         scene.add(object);
                         cb(object);
                     }, onProgress, onError);
             });
-    }
+    };
 
     //======== add laser
     if (0) {
