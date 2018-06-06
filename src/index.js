@@ -161,17 +161,13 @@ class Laser extends Line {
 
             if (isectNew) {
                 let pt = isectNew.point;
-                arr.push(pt.x);
-                arr.push(pt.y);
-                arr.push(pt.z);
+                arr.push(pt.x, pt.y, pt.z);
                 if (arr.length / 3 < maxReflect) {
                     me(pt, ref, isectNew);
                 }
             } else {
                 let inf = src.clone().add(ref.multiplyScalar(self._infLen));
-                arr.push(inf.x);
-                arr.push(inf.y);
-                arr.push(inf.z);
+                arr.push(inf.x, inf.y, inf.z);
             }
         })(src, dir, isect);
         return arr;
