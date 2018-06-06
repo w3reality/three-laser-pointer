@@ -1,6 +1,5 @@
 import DatGuiDefaults from 'dat-gui-defaults';
 import * as THREE from 'three';
-import OrbitControls from 'orbit-controls-es6';
 import Stats from 'stats.js';
 
 //========
@@ -54,7 +53,7 @@ const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
 });
 
-const controls = new OrbitControls(camera, renderer.domElement);
+const controls = new THREE_P.OrbitControls(camera, renderer.domElement);
 
 // https://stackoverflow.com/questions/29884485/threejs-canvas-size-based-on-container
 const resizeCanvasToDisplaySize = (force=false) => {
@@ -150,7 +149,7 @@ let data = (() => {
 
     // register all meshes
     const meshes = [];
-    addModel(scene, (model) => {
+    addModel(scene, (model) => {  // add model async
         scene.traverse((node) => {
             // console.log('node.type:', node.type, node.name);
             if (node instanceof THREE.Mesh) {

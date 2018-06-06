@@ -13,10 +13,9 @@
     "license": "MIT",
     "dependencies": {
         "dat-gui-defaults": "^1.0.0",
-        "orbit-controls-es6": "^1.0.12",
         "stats.js": "^0.17.0",
         "three": "^0.93.0",
-        "three-es6-plugin": "0.0.2"
+        "three-es6-plugin": "0.0.3"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",
