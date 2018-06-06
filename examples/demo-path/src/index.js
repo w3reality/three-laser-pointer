@@ -3,8 +3,8 @@ import * as THREE from 'three';
 import Stats from 'stats.js';
 
 //========
-import THREE_P from 'three-es6-plugin'
-console.log('THREE_P:', THREE_P);
+import THREE_PLUGIN from 'three-es6-plugin';
+console.log('THREE_PLUGIN:', THREE_PLUGIN);
 //========
 
 
@@ -53,7 +53,7 @@ const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
 });
 
-const controls = new THREE_P.OrbitControls(camera, renderer.domElement);
+const controls = new THREE_PLUGIN.OrbitControls(camera, renderer.domElement);
 
 // https://stackoverflow.com/questions/29884485/threejs-canvas-size-based-on-container
 const resizeCanvasToDisplaySize = (force=false) => {
@@ -111,13 +111,13 @@ let data = (() => {
         };
         let onError = (xhr) => {};
 
-        // THREE.Loader.Handlers.add(/\.dds$/i, new THREE_P.DDSLoader());
-        new THREE_P.MTLLoader()
+        // THREE.Loader.Handlers.add(/\.dds$/i, new THREE_PLUGIN.DDSLoader());
+        new THREE_PLUGIN.MTLLoader()
             .setPath('../male02/')
             // .load('male02_dds.mtl', (materials) => { // for with DDSLoader()
             .load('male02.mtl', (materials) => {
                 materials.preload();
-                let objl = new THREE_P.OBJLoader()
+                let objl = new THREE_PLUGIN.OBJLoader()
                     .setMaterials(materials)
                     .setPath('../male02/')
                     .load('male02.obj', (object) => {

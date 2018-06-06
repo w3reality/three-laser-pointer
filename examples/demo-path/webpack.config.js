@@ -17,14 +17,14 @@ if (env === 'build') {
     outputFile = "[name].js";
 }
 
-// workaround for infinite watch-compile loop...  https://github.com/webpack/watchpack/issues/25
-plugins.push(new webpack.WatchIgnorePlugin([ /three-es6-plugin\/build\/.*\.js$/, ])),
 plugins.push(new ThreeEs6Plugin([
     'three/examples/js/controls/OrbitControls.js',
     'three/examples/js/loaders/OBJLoader.js',
     'three/examples/js/loaders/MTLLoader.js',
     'three/examples/js/loaders/DDSLoader.js',
 ]));
+// workaround for infinite watch-compile loop...  https://github.com/webpack/watchpack/issues/25
+plugins.push(new webpack.WatchIgnorePlugin([ /three-es6-plugin\/build\/.*\.js$/, ]));
 
 module.exports = {
     entry: {
