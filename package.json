@@ -1,6 +1,6 @@
 {
     "name": "three-laser-pointer",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Laser object for three.js",
     "main": "dist/three-laser-pointer.js",
     "directories": {
