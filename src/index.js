@@ -38,14 +38,11 @@ class Line extends THREE.Line {
         return positions;
     }
     getPoints() {
-        let arr = [...this.geometry.attributes.position.array]; // dup
-        arr.length = this._numPoints * 3; // truncate
-
+        let arr = this.geometry.attributes.position.array;
         let points = [];
         for (let i = 0; i < this._numPoints; i++) {
             points.push(new THREE.Vector3(arr[3*i], arr[3*i+1], arr[3*i+2]));
         }
-        arr.length = 0;
         return points;
     }
     updatePoints(arr) {
@@ -153,29 +150,57 @@ class Laser extends Line {
     computeReflections(src, dir, isect, meshes, maxReflect) {
         const self = this;
         const arr = [];
-        // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
-        // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
-        (function me (src, dir, isect) {
-            // https://stackoverflow.com/questions/39082673/get-face-global-normal-in-three-js
-            // console.log('local normal:', isect.face.normal);
+
+        while (1) {
             let normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
             let normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
 
             let ref = self.reflect(dir, normalWorld);
             let isectNew = self.raycast(src, ref, meshes, isect.face);
-            // console.log('isectNew:', isectNew);
-
             if (isectNew) {
                 let pt = isectNew.point;
                 arr.push(pt.x, pt.y, pt.z);
                 if (arr.length / 3 < maxReflect) {
-                    me(pt, ref, isectNew);
+                    // me(pt, ref, isectNew);
+                    src = pt;
+                    dir = ref;
+                    isect = isectNew;
+                    continue;
                 }
+                break;
             } else {
                 let inf = src.clone().add(ref.multiplyScalar(self._infLen));
                 arr.push(inf.x, inf.y, inf.z);
+                break;
             }
-        })(src, dir, isect);
+        }
+
+        // DEPRECATED: this recursive version has a stack depth limitation
+        //--------
+        // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
+        // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
+        // (function me (src, dir, isect) {
+        //     // https://stackoverflow.com/questions/39082673/get-face-global-normal-in-three-js
+        //     // console.log('local normal:', isect.face.normal);
+        //     let normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
+        //     let normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+        //
+        //     let ref = self.reflect(dir, normalWorld);
+        //     let isectNew = self.raycast(src, ref, meshes, isect.face);
+        //     // console.log('isectNew:', isectNew);
+        //
+        //     if (isectNew) {
+        //         let pt = isectNew.point;
+        //         arr.push(pt.x, pt.y, pt.z);
+        //         if (arr.length / 3 < maxReflect) {
+        //             me(pt, ref, isectNew);
+        //         }
+        //     } else {
+        //         let inf = src.clone().add(ref.multiplyScalar(self._infLen));
+        //         arr.push(inf.x, inf.y, inf.z);
+        //     }
+        // })(src, dir, isect);
+
         return arr;
     }
 }

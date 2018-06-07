@@ -120,7 +120,8 @@
             }
 
             let laser = new LaserPointer.Laser({
-                color: 0xffffff
+                color: 0xffffff,
+                // maxPoints: 100*1000,
             });
             scene.add(laser);
 
@@ -132,10 +133,11 @@
             });
 
             const config = { // defaults
-                color: "0xff0000",
+                color: "0x00ff00",
                 source: "VR-like",
                 raytrace: true,
                 maxReflect: 16,
+                // maxReflect: 100*1000-2,
             }
             return {
                 scene: scene,
@@ -162,7 +164,7 @@
                         // console.log('no isects');
                         laser.clearPoints();
                     }
-                    // console.log('laser points:', laser.getPoints());
+                    console.log('#points:', laser.getPoints().length);
                 },
                 config: config,
             };
