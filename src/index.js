@@ -161,7 +161,6 @@ class Laser extends Line {
                 let pt = isectNew.point;
                 arr.push(pt.x, pt.y, pt.z);
                 if (arr.length / 3 < maxReflect) {
-                    // me(pt, ref, isectNew);
                     src = pt;
                     dir = ref;
                     isect = isectNew;
@@ -174,8 +173,9 @@ class Laser extends Line {
                 break;
             }
         }
+        return arr;
 
-        // DEPRECATED: this recursive version has a stack depth limitation
+        // DEPRECATED: this recursive version has stack depth limitation
         //--------
         // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
         // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
@@ -200,8 +200,7 @@ class Laser extends Line {
         //         arr.push(inf.x, inf.y, inf.z);
         //     }
         // })(src, dir, isect);
-
-        return arr;
+        // return arr;
     }
 }
 
