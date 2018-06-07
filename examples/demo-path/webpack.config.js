@@ -30,6 +30,9 @@ module.exports = {
     entry: {
         'app': sourcePath + "/index.js",
     },
+    stats: {
+        warnings: false, // suppress warnings from three-es6-plugin
+    },
     output: {
         path: outputPath,
         filename: outputFile,

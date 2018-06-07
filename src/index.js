@@ -40,7 +40,13 @@ class Line extends THREE.Line {
     getPoints() {
         let arr = [...this.geometry.attributes.position.array]; // dup
         arr.length = this._numPoints * 3; // truncate
-        return arr;
+
+        let points = [];
+        for (let i = 0; i < this._numPoints; i++) {
+            points.push(new THREE.Vector3(arr[3*i], arr[3*i+1], arr[3*i+2]));
+        }
+        arr.length = 0;
+        return points;
     }
     updatePoints(arr) {
         let attrPos = this.geometry.attributes.position;

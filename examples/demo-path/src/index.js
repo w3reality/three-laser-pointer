@@ -7,7 +7,6 @@ import THREE_PLUGIN from 'three-es6-plugin';
 console.log('THREE_PLUGIN:', THREE_PLUGIN);
 //========
 
-
 import LaserPointer from '../../../src'; // for dev
 console.log('LaserPointer:', LaserPointer);
 
@@ -190,7 +189,8 @@ let data = (() => {
                 // console.log('no isects');
                 laser.clearPoints();
             }
-            // console.log('laser points:', laser.getPoints());
+            // = 1(src point) + #(reflection points) + 1(end point)
+            console.log('#points:', laser.getPoints().length);
         },
         config: config,
     };
