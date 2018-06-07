@@ -3,6 +3,8 @@ three-laser-pointer
 
 (draft)
 
+Laser object for three.js
+
 Build
 -----
 
