@@ -154,7 +154,13 @@ var Line = function (_THREE$Line) {
         value: function getPoints() {
             var arr = [].concat(_toConsumableArray(this.geometry.attributes.position.array)); // dup
             arr.length = this._numPoints * 3; // truncate
-            return arr;
+
+            var points = [];
+            for (var i = 0; i < this._numPoints; i++) {
+                points.push(new THREE.Vector3(arr[3 * i], arr[3 * i + 1], arr[3 * i + 2]));
+            }
+            arr.length = 0;
+            return points;
         }
     }, {
         key: 'updatePoints',
@@ -162,7 +168,7 @@ var Line = function (_THREE$Line) {
             var attrPos = this.geometry.attributes.position;
             var maxPoints = attrPos.count;
             var numPoints = arr.length / 3;
-            console.log('numPoints/maxPoints: ' + numPoints + '/' + maxPoints);
+            // console.log(`numPoints/maxPoints: ${numPoints}/${maxPoints}`);
             if (numPoints > maxPoints) {
                 numPoints = maxPoints;
             }
@@ -292,6 +298,7 @@ var Laser = function (_Line) {
             var maxReflect = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 16;
 
             this.point(pt, color);
+            if (maxReflect < 1) return;
 
             var src = this.getSource();
             var dir = this.direct(src, pt);
@@ -320,17 +327,13 @@ var Laser = function (_Line) {
 
                 if (isectNew) {
                     var pt = isectNew.point;
-                    arr.push(pt.x);
-                    arr.push(pt.y);
-                    arr.push(pt.z);
+                    arr.push(pt.x, pt.y, pt.z);
                     if (arr.length / 3 < maxReflect) {
                         me(pt, ref, isectNew);
                     }
                 } else {
                     var inf = src.clone().add(ref.multiplyScalar(self._infLen));
-                    arr.push(inf.x);
-                    arr.push(inf.y);
-                    arr.push(inf.z);
+                    arr.push(inf.x, inf.y, inf.z);
                 }
             })(src, dir, isect);
             return arr;
