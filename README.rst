@@ -6,8 +6,8 @@ three-laser-pointer
 Laser object for three.js
 
 .. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-with-raycast/laser.png
+   :target: https://w3reality.github.io/three-laser-pointer/examples/demo-with-raycast/index.html
 ..
-   :target: https://w3reality.github.io/...
    :width: 640
 
 
