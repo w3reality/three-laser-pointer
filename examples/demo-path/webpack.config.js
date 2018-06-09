@@ -24,7 +24,7 @@ plugins.push(new ThreeEs6Plugin([
     'three/examples/js/loaders/DDSLoader.js',
 ]));
 // workaround for infinite watch-compile loop...  https://github.com/webpack/watchpack/issues/25
-plugins.push(new webpack.WatchIgnorePlugin([ /three-es6-plugin\/build\/.*\.js$/, ]));
+plugins.push(new webpack.WatchIgnorePlugin([ /three-es6-plugin\/es6\/.*\.js$/, ]));
 
 module.exports = {
     entry: {

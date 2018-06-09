@@ -2,8 +2,10 @@ import DatGuiDefaults from 'dat-gui-defaults';
 import * as THREE from 'three';
 import Stats from 'stats.js';
 
-import THREE_PLUGIN from 'three-es6-plugin';
-console.log('THREE_PLUGIN:', THREE_PLUGIN);
+import OrbitControls from 'three-es6-plugin/es6/OrbitControls';
+import OBJLoader from 'three-es6-plugin/es6/OBJLoader';
+import MTLLoader from 'three-es6-plugin/es6/MTLLoader';
+import DDSLoader from 'three-es6-plugin/es6/DDSLoader';
 
 import LaserPointer from '../../../src'; // for dev
 console.log('LaserPointer:', LaserPointer);
@@ -11,36 +13,38 @@ console.log('LaserPointer:', LaserPointer);
 
 
 // begin -------- how to use DatGuiDefaults
-class DemoGui extends DatGuiDefaults {
-    // override
-    initGui(gui, data, params) {
-        let config = data;
-        let controller;
-        controller = gui.addColor(params, 'color').name('Color');
-        controller.onChange((value) => { // or onFinishChange
-            config.color = value;
-        });
-        controller = gui.add(params, 'wireframe').name('Wireframe');
-        controller.onChange((value) => {
-            config.wireframe = value;
-        });
-        controller = gui.add(params, 'reset').name("Restore Defaults");
-        controller.onChange((value) => {
-            this.applyDefaults();
-            Object.assign(config, params);
-        });
+if (0) {
+    class DemoGui extends DatGuiDefaults {
+        // override
+        initGui(gui, data, params) {
+            let config = data;
+            let controller;
+            controller = gui.addColor(params, 'color').name('Color');
+            controller.onChange((value) => { // or onFinishChange
+                config.color = value;
+            });
+            controller = gui.add(params, 'wireframe').name('Wireframe');
+            controller.onChange((value) => {
+                config.wireframe = value;
+            });
+            controller = gui.add(params, 'reset').name("Restore Defaults");
+            controller.onChange((value) => {
+                this.applyDefaults();
+                Object.assign(config, params);
+            });
+        }
     }
+    const config = { // defaults
+        color: "0xff0000",
+        wireframe: true,
+    };
+    const dg = new DemoGui(config);
+    dg.setDefaults({
+        color: config.color.replace("0x", "#"),
+        wireframe: config.wireframe,
+        reset: () => {},
+    });
 }
-const config = { // defaults
-    color: "0xff0000",
-    wireframe: true,
-};
-const dg = new DemoGui(config);
-dg.setDefaults({
-    color: config.color.replace("0x", "#"),
-    wireframe: config.wireframe,
-    reset: () => {},
-});
 // end -------- how to use DatGuiDefaults
 
 const canvas = document.getElementById("canvas");
@@ -52,7 +56,7 @@ const renderer = new THREE.WebGLRenderer({
     canvas: canvas,
 });
 
-const controls = new THREE_PLUGIN.OrbitControls(camera, renderer.domElement);
+const controls = new OrbitControls(camera, renderer.domElement);
 
 // https://stackoverflow.com/questions/29884485/threejs-canvas-size-based-on-container
 const resizeCanvasToDisplaySize = (force=false) => {
@@ -110,13 +114,13 @@ let data = (() => {
         };
         let onError = (xhr) => {};
 
-        // THREE.Loader.Handlers.add(/\.dds$/i, new THREE_PLUGIN.DDSLoader());
-        new THREE_PLUGIN.MTLLoader()
+        // THREE.Loader.Handlers.add(/\.dds$/i, new DDSLoader());
+        new MTLLoader()
             .setPath('../male02/')
             // .load('male02_dds.mtl', (materials) => { // for with DDSLoader()
             .load('male02.mtl', (materials) => {
                 materials.preload();
-                let objl = new THREE_PLUGIN.OBJLoader()
+                let objl = new OBJLoader()
                     .setMaterials(materials)
                     .setPath('../male02/')
                     .load('male02.obj', (object) => {
@@ -134,48 +138,47 @@ let data = (() => {
             });
     };
 
-    //======== for adding tiles (async)
-    // const addTiles = () => {
-    //     // ~/Projects/peterqliu.github.io/bundle.js
-    //     let origin = [36.2058, -112.4413];
-    //     let radius = 5;
-    //     let maxArea = radius*radius*2*1000000;
-    //     let northWest, southEast, testPolygon;
-    //     const getBbox = (origin, radius) => {
-    //         northWest = turf.destination(
-    //             turf.point(reverseCoords(origin)),
-    //             radius, -45, 'kilometers').geometry.coordinates;
-    //         southEast = turf.destination(
-    //             turf.point(reverseCoords(origin)),
-    //             radius, 135, 'kilometers').geometry.coordinates;
-    //
-    //         testPolygon = {
-    //             "type": "FeatureCollection",
-    //             "features": [{
-    //                 "type": "Feature",
-    //                 "properties": {},
-    //                 "geometry": {
-    //                     "type": "Polygon",
-    //                     "coordinates": [
-    //                         [
-    //                         ]
-    //                     ]
-    //                 }
-    //             }]
-    //         };
-    //         testPolygon.features[0].geometry.coordinates[0] = [
-    //             northWest,
-    //             [southEast[0], northWest[1]],
-    //             southEast,
-    //             [northWest[0], southEast[1]],
-    //             northWest
-    //         ];
-    //         return testPolygon.features[0];
-    //     };
-    //
-    // };
-    console.log('22xxcc');
-    // console.log('2211addTiles:', addTiles);
+    // ======== for adding tiles (async)
+    const addTiles = () => {
+        // ~/Projects/peterqliu.github.io/bundle.js
+        let origin = [36.2058, -112.4413];
+        let radius = 5;
+        let maxArea = radius*radius*2*1000000;
+        let northWest, southEast, testPolygon;
+        const getBbox = (origin, radius) => {
+            northWest = turf.destination(
+                turf.point(reverseCoords(origin)),
+                radius, -45, 'kilometers').geometry.coordinates;
+            southEast = turf.destination(
+                turf.point(reverseCoords(origin)),
+                radius, 135, 'kilometers').geometry.coordinates;
+
+            testPolygon = {
+                "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                            ]
+                        ]
+                    }
+                }]
+            };
+            testPolygon.features[0].geometry.coordinates[0] = [
+                northWest,
+                [southEast[0], northWest[1]],
+                southEast,
+                [northWest[0], southEast[1]],
+                northWest
+            ];
+            return testPolygon.features[0];
+        };
+
+    };
+    console.log('zzzxx2211addTiles:', addTiles);
     //======== add laser
     if (0) {
         let line = new LaserPointer.Line(32, 0x00ffff);

@@ -46992,11 +46992,23 @@ var _stats = __webpack_require__(3);
 
 var _stats2 = _interopRequireDefault(_stats);
 
-var _threeEs6Plugin = __webpack_require__(4);
+var _OrbitControls = __webpack_require__(4);
 
-var _threeEs6Plugin2 = _interopRequireDefault(_threeEs6Plugin);
+var _OrbitControls2 = _interopRequireDefault(_OrbitControls);
 
-var _src = __webpack_require__(9);
+var _OBJLoader = __webpack_require__(5);
+
+var _OBJLoader2 = _interopRequireDefault(_OBJLoader);
+
+var _MTLLoader = __webpack_require__(6);
+
+var _MTLLoader2 = _interopRequireDefault(_MTLLoader);
+
+var _DDSLoader = __webpack_require__(7);
+
+var _DDSLoader2 = _interopRequireDefault(_DDSLoader);
+
+var _src = __webpack_require__(8);
 
 var _src2 = _interopRequireDefault(_src);
 
@@ -47010,65 +47022,60 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-//========
-
-
-console.log('THREE_PLUGIN:', _threeEs6Plugin2.default);
-//========
-
 // for dev
 console.log('LaserPointer:', _src2.default);
 
 // begin -------- how to use DatGuiDefaults
+if (0) {
+    var DemoGui = function (_DatGuiDefaults) {
+        _inherits(DemoGui, _DatGuiDefaults);
 
-var DemoGui = function (_DatGuiDefaults) {
-    _inherits(DemoGui, _DatGuiDefaults);
+        function DemoGui() {
+            _classCallCheck(this, DemoGui);
 
-    function DemoGui() {
-        _classCallCheck(this, DemoGui);
-
-        return _possibleConstructorReturn(this, (DemoGui.__proto__ || Object.getPrototypeOf(DemoGui)).apply(this, arguments));
-    }
-
-    _createClass(DemoGui, [{
-        key: 'initGui',
-
-        // override
-        value: function initGui(gui, data, params) {
-            var _this2 = this;
-
-            var config = data;
-            var controller = void 0;
-            controller = gui.addColor(params, 'color').name('Color');
-            controller.onChange(function (value) {
-                // or onFinishChange
-                config.color = value;
-            });
-            controller = gui.add(params, 'wireframe').name('Wireframe');
-            controller.onChange(function (value) {
-                config.wireframe = value;
-            });
-            controller = gui.add(params, 'reset').name("Restore Defaults");
-            controller.onChange(function (value) {
-                _this2.applyDefaults();
-                Object.assign(config, params);
-            });
+            return _possibleConstructorReturn(this, (DemoGui.__proto__ || Object.getPrototypeOf(DemoGui)).apply(this, arguments));
         }
-    }]);
 
-    return DemoGui;
-}(_datGuiDefaults2.default);
+        _createClass(DemoGui, [{
+            key: 'initGui',
 
-var config = { // defaults
-    color: "0xff0000",
-    wireframe: true
-};
-var dg = new DemoGui(config);
-dg.setDefaults({
-    color: config.color.replace("0x", "#"),
-    wireframe: config.wireframe,
-    reset: function reset() {}
-});
+            // override
+            value: function initGui(gui, data, params) {
+                var _this2 = this;
+
+                var config = data;
+                var controller = void 0;
+                controller = gui.addColor(params, 'color').name('Color');
+                controller.onChange(function (value) {
+                    // or onFinishChange
+                    config.color = value;
+                });
+                controller = gui.add(params, 'wireframe').name('Wireframe');
+                controller.onChange(function (value) {
+                    config.wireframe = value;
+                });
+                controller = gui.add(params, 'reset').name("Restore Defaults");
+                controller.onChange(function (value) {
+                    _this2.applyDefaults();
+                    Object.assign(config, params);
+                });
+            }
+        }]);
+
+        return DemoGui;
+    }(_datGuiDefaults2.default);
+
+    var config = { // defaults
+        color: "0xff0000",
+        wireframe: true
+    };
+    var dg = new DemoGui(config);
+    dg.setDefaults({
+        color: config.color.replace("0x", "#"),
+        wireframe: config.wireframe,
+        reset: function reset() {}
+    });
+}
 // end -------- how to use DatGuiDefaults
 
 var canvas = document.getElementById("canvas");
@@ -47080,7 +47087,7 @@ var renderer = new THREE.WebGLRenderer({
     canvas: canvas
 });
 
-var controls = new _threeEs6Plugin2.default.OrbitControls(camera, renderer.domElement);
+var controls = new _OrbitControls2.default(camera, renderer.domElement);
 
 // https://stackoverflow.com/questions/29884485/threejs-canvas-size-based-on-container
 var resizeCanvasToDisplaySize = function resizeCanvasToDisplaySize() {
@@ -47128,7 +47135,7 @@ var data = function () {
     walls.name = "walls";
     scene.add(walls);
 
-    //======== for add model (async)
+    //======== for adding model (async)
     var addModel = function addModel(scene, cb) {
         var onProgress = function onProgress(xhr) {
             if (xhr.lengthComputable) {
@@ -47138,12 +47145,12 @@ var data = function () {
         };
         var onError = function onError(xhr) {};
 
-        // THREE.Loader.Handlers.add(/\.dds$/i, new THREE_PLUGIN.DDSLoader());
-        new _threeEs6Plugin2.default.MTLLoader().setPath('../male02/')
+        // THREE.Loader.Handlers.add(/\.dds$/i, new DDSLoader());
+        new _MTLLoader2.default().setPath('../male02/')
         // .load('male02_dds.mtl', (materials) => { // for with DDSLoader()
         .load('male02.mtl', function (materials) {
             materials.preload();
-            var objl = new _threeEs6Plugin2.default.OBJLoader().setMaterials(materials).setPath('../male02/').load('male02.obj', function (object) {
+            var objl = new _OBJLoader2.default().setMaterials(materials).setPath('../male02/').load('male02.obj', function (object) {
                 // console.log('object:', object);
                 object.name = "male02";
                 object.position.y = -3.0;
@@ -47158,6 +47165,35 @@ var data = function () {
         });
     };
 
+    // ======== for adding tiles (async)
+    var addTiles = function addTiles() {
+        // ~/Projects/peterqliu.github.io/bundle.js
+        var origin = [36.2058, -112.4413];
+        var radius = 5;
+        var maxArea = radius * radius * 2 * 1000000;
+        var northWest = void 0,
+            southEast = void 0,
+            testPolygon = void 0;
+        var getBbox = function getBbox(origin, radius) {
+            northWest = turf.destination(turf.point(reverseCoords(origin)), radius, -45, 'kilometers').geometry.coordinates;
+            southEast = turf.destination(turf.point(reverseCoords(origin)), radius, 135, 'kilometers').geometry.coordinates;
+
+            testPolygon = {
+                "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[]]
+                    }
+                }]
+            };
+            testPolygon.features[0].geometry.coordinates[0] = [northWest, [southEast[0], northWest[1]], southEast, [northWest[0], southEast[1]], northWest];
+            return testPolygon.features[0];
+        };
+    };
+    console.log('zzzxx2211addTiles:', addTiles);
     //======== add laser
     if (0) {
         var line = new _src2.default.Line(32, 0x00ffff);
@@ -49949,23 +49985,6 @@ b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{do
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__es6_OrbitControls__ = __webpack_require__(5);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__es6_OBJLoader__ = __webpack_require__(6);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__es6_MTLLoader__ = __webpack_require__(7);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__es6_DDSLoader__ = __webpack_require__(8);
-// generated file
-
-
-
-
-/* harmony default export */ __webpack_exports__["default"] = ({ OrbitControls: __WEBPACK_IMPORTED_MODULE_0__es6_OrbitControls__["a" /* default */],OBJLoader: __WEBPACK_IMPORTED_MODULE_1__es6_OBJLoader__["a" /* default */],MTLLoader: __WEBPACK_IMPORTED_MODULE_2__es6_MTLLoader__["a" /* default */],DDSLoader: __WEBPACK_IMPORTED_MODULE_3__es6_DDSLoader__["a" /* default */] });
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(0);
 
 
@@ -51009,14 +51028,15 @@ Object.defineProperties( __WEBPACK_IMPORTED_MODULE_0_three__["OrbitControls"].pr
 
 } );
 
-/* harmony default export */ __webpack_exports__["a"] = (__WEBPACK_IMPORTED_MODULE_0_three__["OrbitControls"]);
+/* harmony default export */ __webpack_exports__["default"] = (__WEBPACK_IMPORTED_MODULE_0_three__["OrbitControls"]);
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(0);
 
 
@@ -51814,14 +51834,15 @@ __WEBPACK_IMPORTED_MODULE_0_three__["OBJLoader"] = ( function () {
 
 } )();
 
-/* harmony default export */ __webpack_exports__["a"] = (__WEBPACK_IMPORTED_MODULE_0_three__["OBJLoader"]);
+/* harmony default export */ __webpack_exports__["default"] = (__WEBPACK_IMPORTED_MODULE_0_three__["OBJLoader"]);
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(0);
 
 
@@ -52385,14 +52406,15 @@ __WEBPACK_IMPORTED_MODULE_0_three__["MTLLoader"].MaterialCreator.prototype = {
 
 };
 
-/* harmony default export */ __webpack_exports__["a"] = (__WEBPACK_IMPORTED_MODULE_0_three__["MTLLoader"]);
+/* harmony default export */ __webpack_exports__["default"] = (__WEBPACK_IMPORTED_MODULE_0_three__["MTLLoader"]);
 
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(0);
 
 
@@ -52667,11 +52689,11 @@ __WEBPACK_IMPORTED_MODULE_0_three__["DDSLoader"].parse = function ( buffer, load
 
 };
 
-/* harmony default export */ __webpack_exports__["a"] = (__WEBPACK_IMPORTED_MODULE_0_three__["DDSLoader"]);
+/* harmony default export */ __webpack_exports__["default"] = (__WEBPACK_IMPORTED_MODULE_0_three__["DDSLoader"]);
 
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

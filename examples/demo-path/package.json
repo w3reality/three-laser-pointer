@@ -15,7 +15,7 @@
         "dat-gui-defaults": "^1.0.0",
         "stats.js": "^0.17.0",
         "three": "^0.93.0",
-        "three-es6-plugin": "^1.0.4"
+        "three-es6-plugin": "^1.0.6"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",
