@@ -12,11 +12,13 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
+        "@mapbox/tile-cover": "^3.0.2",
         "@turf/turf": "^5.1.6",
         "dat-gui-defaults": "^1.0.0",
         "stats.js": "^0.17.0",
         "three": "^0.93.0",
-        "three-es6-plugin": "^1.0.6"
+        "three-es6-plugin": "^1.0.6",
+        "xhr": "^2.5.0"
     },
     "devDependencies": {
         "babel-cli": "^6.26.0",

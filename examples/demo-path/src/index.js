@@ -10,8 +10,10 @@ import DDSLoader from 'three-es6-plugin/es6/DDSLoader';
 import LaserPointer from '../../../src'; // for dev
 console.log('LaserPointer:', LaserPointer);
 
-// http://turfjs.org/getting-started/
-import * as turf from '@turf/turf'
+import env from './env.js';
+import * as turf from '@turf/turf'; // http://turfjs.org/getting-started/
+import cover from '@mapbox/tile-cover';
+import xhr from 'xhr';
 
 
 // begin -------- how to use DatGuiDefaults
@@ -141,8 +143,8 @@ let data = (() => {
     };
 
     // ======== for adding tiles (async)
+    // This function is an adaptation of peterqliu.github.io/bundle.js
     const addTiles = () => {
-        // ~/Projects/peterqliu.github.io/bundle.js
         let origin = [36.2058, -112.4413];
         let radius = 5;
         let maxArea = radius*radius*2*1000000;
@@ -175,9 +177,9 @@ let data = (() => {
                 [southEast[0], northWest[1]],
                 southEast,
                 [northWest[0], southEast[1]],
-                northWest
+                northWest,
             ];
-            console.log('testPolygon:', testPolygon);
+            // console.log('testPolygon:', testPolygon);
             return {
                 feature: testPolygon.features[0],
                 northWest: northWest,
@@ -186,6 +188,158 @@ let data = (() => {
         };
         let bbox = getBbox(origin, radius);
         console.log('bbox:', bbox);
+
+        // given the isochrone polygon,
+        // identify the relevant tiles (via tile-cover),
+        // request those tile pbfs, translate into geoJSONs
+        const getBlocks = (polygon) => {
+            let limits = {
+                min_zoom: 14,
+                max_zoom: 14,
+            };
+            let tilesCovered = cover.tiles(polygon.geometry, limits);
+            console.log(`about to download ${tilesCovered.length} tiles`);
+
+            let geojson = {
+                type: "FeatureCollection",
+                features: [],
+            };
+            let queryCount = 0;
+            let bottomTiles = [];
+            // for each tile triplet (identified as z-x-y),
+            // download corresponding PBF and convert to geoJSON
+            const api = 'https://a.tiles.mapbox.com/v4/mapbox.mapbox-terrain-v2';
+            // TODO save token in env??????????
+            const token = `${env.token}`;
+            console.log('token:', token);
+            tilesCovered.forEach((zoompos, index) => {
+                console.log('DOWNLOADING TILE');
+                if (index > 0) return; //!!!!!!!!!!!!!!!!!!!!!!!
+                xhr({
+                    uri: `${api}/${zoompos[2]}/${zoompos[0]}/${zoompos[1]}.vector.pbf?access_token=${token}`,
+                    responseType: 'arraybuffer',
+                }, (error, response, buffer) => {
+                    queryCount++;
+                    if (error) {
+                        alert(error);
+                        return;
+                    };
+                    console.log('buffer:', buffer);
+                    return; //!!!!!!!!!!!!!!!
+
+                    var tile = new VectorTile(new Pbf(buffer));
+                    //populate geoJSON
+                    for (var i=0; i<tile.layers.contour.length; i++){
+                        //convert each feature (within #population) into a geoJSON polygon, and push it into our variable
+                        var feature = tile.layers.contour.feature(i).toGeoJSON(zoompos[0], zoompos[1], zoompos[2]);
+                        if (i===0) bottomTiles.push(feature)
+
+                        //break multigons into multiple polygons
+                        if (feature.geometry.type==='MultiPolygon'){
+                            feature.geometry.coordinates.forEach(function(polygon){
+                                var feat={
+                                    'type':'Feature',
+                                    'properties': {'ele': feature.properties.ele},
+                                    'geometry': {'type':'Polygon','coordinates': polygon}
+                                }
+                                geojson.features.push(feat)
+                            })
+                        }
+
+                        //single polygons can be pushed in as-is
+                        else {geojson.features.push(feature)}
+                    }
+
+                    //ONCE all tiles have been downloaded, get a list of all elevations used
+
+                    if (queryCount === tilesCovered.length) {
+
+                        console.log('finished downloading in '+(Date.now()-prevMilestone)+'ms')
+
+                        prevMilestone=Date.now();
+
+                        var eleList = uniq(
+                            geojson.features.map(
+                                function(feature){
+                                    return feature.properties.ele
+                                })
+                            )
+                            .sort(function(a,b){return a-b});
+
+
+                            bottomTiles.forEach(function(bottom){
+                                var tileBottomEle=bottom.properties.ele;
+
+                                for (var k=eleList[0]; k<tileBottomEle; k+=10){
+                                    var toInsert={type:"Feature", geometry: bottom.geometry, properties:{ele: k}};
+                                    geojson.features.push(toInsert)
+                                }
+                            })
+
+                            //iterate through elevations, and merge polys of the same elevation
+                            for (var x=0; x<eleList.length; x++){
+
+                                var currentElevation=eleList[x]
+                                var elevationPolys =
+                                geojson.features.filter(function(feature){return feature.properties.ele === currentElevation})
+
+                                if (currentElevation===1220) console.log(elevationPolys)
+
+                                //merge between tiles
+                                try {
+
+
+
+                                    //var mergedElevationPoly = tbuffer(turf.featurecollection(elevationPolys),0, 'miles').features[0]
+                                    var mergedElevationPoly = turf.merge(turf.featurecollection(elevationPolys))
+                                    // trim to desired search area
+                                    mergedElevationPoly = turf.intersect(testPolygon.features[0], mergedElevationPoly)
+
+                                    if (mergedElevationPoly) {
+                                        var contourArea = turf.area(mergedElevationPoly.geometry);
+                                        L.mapbox.featureLayer().setGeoJSON(mergedElevationPoly).addTo(map)
+
+                                        contours.push({
+                                            'geometry':mergedElevationPoly,
+                                            'ele':currentElevation,
+                                            'area': contourArea
+                                        })
+                                    }
+                                }
+
+                                //on merge fail, insert the previous contour again and skip
+                                catch(error) {
+                                    console.log('merge failed at elevation '+currentElevation)
+                                    console.log(error.message)
+                                }
+
+                                //ONCE merging finished, draw the DEM
+                                if (x === eleList.length-1) {
+
+                                    console.log('merge operation took '+(Date.now()-prevMilestone)+'ms')
+                                    prevMilestone=Date.now()
+
+                                    //remove contour undercuts
+                                    for (var m=contours.length-2; m>=0; m--){
+                                        var currContour= contours[m]
+                                        var prevContour= contours[m+1]
+                                        if (currContour.area>= maxArea && prevContour.area>=maxArea){
+                                            console.log('max area reached!')
+                                            contours=contours.slice(m+1)
+                                            break
+                                        }
+                                    }
+
+                                    //drawHistogram(contours.map(function(contour){return contour.area}))
+                                    //drawRain(origin)
+                                    drawDEM(contours, northWest,southEast,radius)
+                                }
+                            }
+                        }
+                }); // end of xhr
+            }); // end of tilesCovered.forEach
+        };
+        getBlocks(bbox.feature);
 
     };
     console.log('zzzxx2211');
