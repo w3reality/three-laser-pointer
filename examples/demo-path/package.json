@@ -12,6 +12,7 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
+        "@turf/turf": "^5.1.6",
         "dat-gui-defaults": "^1.0.0",
         "stats.js": "^0.17.0",
         "three": "^0.93.0",

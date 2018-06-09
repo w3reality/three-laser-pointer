@@ -10,6 +10,8 @@ import DDSLoader from 'three-es6-plugin/es6/DDSLoader';
 import LaserPointer from '../../../src'; // for dev
 console.log('LaserPointer:', LaserPointer);
 
+// http://turfjs.org/getting-started/
+import * as turf from '@turf/turf'
 
 
 // begin -------- how to use DatGuiDefaults
@@ -144,16 +146,17 @@ let data = (() => {
         let origin = [36.2058, -112.4413];
         let radius = 5;
         let maxArea = radius*radius*2*1000000;
-        let northWest, southEast, testPolygon;
         const getBbox = (origin, radius) => {
-            northWest = turf.destination(
+            const reverseCoords = (coords) => {
+                return [coords[1], coords[0]];
+            };
+            let northWest = turf.destination(
                 turf.point(reverseCoords(origin)),
-                radius, -45, 'kilometers').geometry.coordinates;
-            southEast = turf.destination(
+                radius, -45, {units: 'kilometers'}).geometry.coordinates;
+            let southEast = turf.destination(
                 turf.point(reverseCoords(origin)),
-                radius, 135, 'kilometers').geometry.coordinates;
-
-            testPolygon = {
+                radius, 135, {units: 'kilometers'}).geometry.coordinates;
+            let testPolygon = {
                 "type": "FeatureCollection",
                 "features": [{
                     "type": "Feature",
@@ -174,11 +177,20 @@ let data = (() => {
                 [northWest[0], southEast[1]],
                 northWest
             ];
-            return testPolygon.features[0];
+            console.log('testPolygon:', testPolygon);
+            return {
+                feature: testPolygon.features[0],
+                northWest: northWest,
+                southEast: southEast,
+            };
         };
+        let bbox = getBbox(origin, radius);
+        console.log('bbox:', bbox);
 
     };
-    console.log('zzzxx2211addTiles:', addTiles);
+    console.log('zzzxx2211');
+    addTiles();
+
     //======== add laser
     if (0) {
         let line = new LaserPointer.Line(32, 0x00ffff);
