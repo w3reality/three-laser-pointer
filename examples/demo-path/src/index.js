@@ -14,6 +14,9 @@ import env from './env.js';
 import * as turf from '@turf/turf'; // http://turfjs.org/getting-started/
 import cover from '@mapbox/tile-cover';
 import xhr from 'xhr';
+import Pbf from 'pbf';
+import { VectorTile } from '@mapbox/vector-tile';
+import uniq from 'uniq';
 
 
 // begin -------- how to use DatGuiDefaults
@@ -144,12 +147,50 @@ let data = (() => {
 
     // ======== for adding tiles (async)
 
-    const processTile = (tile) => {
+    const processTile = (tile, zoompos, bottomTiles, geojson) => {
+        //populate geoJSON
+        for (let i = 0; i < tile.layers.contour.length; i++) {
+            // convert each feature (within #population) into a geoJSON polygon,
+            // and push it into our variable
+            let feature = tile.layers.contour.feature(i)
+                .toGeoJSON(zoompos[0], zoompos[1], zoompos[2]);
+            if (i === 0) bottomTiles.push(feature);
 
+            // break multigons into multiple polygons
+            if (feature.geometry.type === 'MultiPolygon') {
+                feature.geometry.coordinates.forEach((polygon) => {
+                    let feat = {
+                        type: 'Feature',
+                        properties: {ele: feature.properties.ele},
+                        geometry: {type: 'Polygon', coordinates: polygon},
+                    };
+                    geojson.features.push(feat);
+                });
+            } else { // single polygons can be pushed in as-is
+                geojson.features.push(feature);
+            }
+        }
+    };
+    const getEleList = (bottomTiles, geojson) => {
+        let mapper = (feature) => { return feature.properties.ele; };
+        let eleList = uniq(geojson.features.map(mapper))
+            .sort((a,b) => { return a-b; });
+
+        bottomTiles.forEach((bottom) => {
+            let tileBottomEle = bottom.properties.ele;
+            for (let k = eleList[0]; k < tileBottomEle; k += 10) {
+                geojson.features.push({
+                    type: "Feature",
+                    geometry: bottom.geometry,
+                    properties: {ele: k},
+                });
+            }
+        });
+        return eleList;
     };
 
-
-    // This function is an adaptation of peterqliu.github.io/bundle.js
+    // This function is an adaptation of
+    // https://github.com/peterqliu/peterqliu.github.io/bundle.js
     const addTiles = () => {
         let origin = [36.2058, -112.4413];
         let radius = 5;
@@ -218,6 +259,8 @@ let data = (() => {
             const token = `${env.token}`;
             console.log('token:', token);
 
+            let prevMilestone = Date.now();
+
             tilesCovered.forEach((zoompos, index) => {
                 console.log('DOWNLOADING TILE');
 
@@ -230,12 +273,22 @@ let data = (() => {
                     // https://stackoverflow.com/questions/15341912/how-to-go-from-blob-to-arraybuffer
                     let fr = new FileReader();
                     fr.onload = (e) => {
-                        let arrayBuffer = e.target.result;
-                        console.log('arrayBuffer:', arrayBuffer);
+                        let buffer = e.target.result;
+                        console.log('arrayBuffer:', buffer); // ArrayBuffer(39353) {}
+                        let tile = new VectorTile(new Pbf(buffer));
+                        console.log('tile:', tile);
+
+                        processTile(tile, zoompos, bottomTiles, geojson);
+                        console.log('bottomTiles:', bottomTiles);
+                        console.log('geojson:', geojson);
+
+                        let eleList = getEleList(bottomTiles, geojson);
+                        console.log('eleList:', eleList);
+
                     };
                     fr.readAsArrayBuffer(blob);
                 });
-                // if (index == 0) return; //!!!!!!!!!!!!!!!!!!!!!!!
+                if (index === 0) return; //!!!!!!!!!!!!!!!!!!!!!!!
 
                 xhr({
                     uri: `${api}/${zoompos[2]}/${zoompos[0]}/${zoompos[1]}.vector.pbf?access_token=${token}`,
@@ -248,7 +301,7 @@ let data = (() => {
                     };
                     console.log('buffer:', buffer); // ArrayBuffer(39353) {}
 
-                    if (0) {
+                    if (0) { // dump buffer
                         // https://discourse.threejs.org/t/how-to-create-a-new-file-and-save-it-with-arraybuffer-content/628/2
                         let file = new Blob([buffer], {type: "application/octet-stream"});
                         let a = document.createElement("a");
@@ -259,115 +312,70 @@ let data = (() => {
                     }
                     return; //!!!!!!!!!!!!!!!
 
-                    var tile = new VectorTile(new Pbf(buffer));
-                    //populate geoJSON
-                    for (var i = 0; i < tile.layers.contour.length; i++) {
-                        //convert each feature (within #population) into a geoJSON polygon, and push it into our variable
-                        var feature = tile.layers.contour.feature(i).toGeoJSON(zoompos[0], zoompos[1], zoompos[2]);
-                        if (i===0) bottomTiles.push(feature)
+                    let tile = new VectorTile(new Pbf(buffer));
+                    processTile(tile, zoompos, bottomTiles, geojson);
 
-                        //break multigons into multiple polygons
-                        if (feature.geometry.type==='MultiPolygon'){
-                            feature.geometry.coordinates.forEach(function(polygon){
-                                var feat={
-                                    'type':'Feature',
-                                    'properties': {'ele': feature.properties.ele},
-                                    'geometry': {'type':'Polygon','coordinates': polygon}
-                                }
-                                geojson.features.push(feat)
-                            })
-                        }
-
-                        //single polygons can be pushed in as-is
-                        else {geojson.features.push(feature)}
-                    }
-
-                    //ONCE all tiles have been downloaded, get a list of all elevations used
-
+                    // ONCE all tiles have been downloaded,
+                    // get a list of all elevations used
                     if (queryCount === tilesCovered.length) {
+                        console.log('finished downloading in '+(Date.now()-prevMilestone)+'ms');
+                        prevMilestone = Date.now();
 
-                        console.log('finished downloading in '+(Date.now()-prevMilestone)+'ms')
+                        let eleList = getEleList(bottomTiles, geojson);
+                        console.log('eleList:', eleList);
 
-                        prevMilestone=Date.now();
+                        //iterate through elevations, and merge polys of the same elevation
+                        for (var x = 0; x < eleList.length; x++) {
+                            var currentElevation=eleList[x]
+                            var elevationPolys =
+                            geojson.features.filter(function(feature){return feature.properties.ele === currentElevation})
 
-                        var eleList = uniq(
-                            geojson.features.map(
-                                function(feature){
-                                    return feature.properties.ele
-                                })
-                            )
-                            .sort(function(a,b){return a-b});
+                            if (currentElevation===1220) console.log(elevationPolys)
 
+                            //merge between tiles
+                            try {
+                                //var mergedElevationPoly = tbuffer(turf.featurecollection(elevationPolys),0, 'miles').features[0]
+                                var mergedElevationPoly = turf.merge(turf.featurecollection(elevationPolys))
+                                // trim to desired search area
+                                mergedElevationPoly = turf.intersect(testPolygon.features[0], mergedElevationPoly)
 
-                            bottomTiles.forEach(function(bottom){
-                                var tileBottomEle=bottom.properties.ele;
+                                if (mergedElevationPoly) {
+                                    var contourArea = turf.area(mergedElevationPoly.geometry);
+                                    L.mapbox.featureLayer().setGeoJSON(mergedElevationPoly).addTo(map)
 
-                                for (var k=eleList[0]; k<tileBottomEle; k+=10){
-                                    var toInsert={type:"Feature", geometry: bottom.geometry, properties:{ele: k}};
-                                    geojson.features.push(toInsert)
+                                    contours.push({
+                                        'geometry':mergedElevationPoly,
+                                        'ele':currentElevation,
+                                        'area': contourArea
+                                    });
                                 }
-                            })
+                            } catch (error) { // on merge fail, insert the previous contour again and skip
+                                console.log('merge failed at elevation '+currentElevation)
+                                console.log(error.message)
+                            }
 
-                            //iterate through elevations, and merge polys of the same elevation
-                            for (var x=0; x<eleList.length; x++){
+                            //ONCE merging finished, draw the DEM
+                            if (x === eleList.length-1) {
+                                console.log('merge operation took '+(Date.now()-prevMilestone)+'ms');
+                                prevMilestone = Date.now();
 
-                                var currentElevation=eleList[x]
-                                var elevationPolys =
-                                geojson.features.filter(function(feature){return feature.properties.ele === currentElevation})
-
-                                if (currentElevation===1220) console.log(elevationPolys)
-
-                                //merge between tiles
-                                try {
-
-
-
-                                    //var mergedElevationPoly = tbuffer(turf.featurecollection(elevationPolys),0, 'miles').features[0]
-                                    var mergedElevationPoly = turf.merge(turf.featurecollection(elevationPolys))
-                                    // trim to desired search area
-                                    mergedElevationPoly = turf.intersect(testPolygon.features[0], mergedElevationPoly)
-
-                                    if (mergedElevationPoly) {
-                                        var contourArea = turf.area(mergedElevationPoly.geometry);
-                                        L.mapbox.featureLayer().setGeoJSON(mergedElevationPoly).addTo(map)
-
-                                        contours.push({
-                                            'geometry':mergedElevationPoly,
-                                            'ele':currentElevation,
-                                            'area': contourArea
-                                        })
+                                //remove contour undercuts
+                                for (var m=contours.length-2; m>=0; m--){
+                                    var currContour= contours[m]
+                                    var prevContour= contours[m+1]
+                                    if (currContour.area>= maxArea && prevContour.area>=maxArea){
+                                        console.log('max area reached!')
+                                        contours=contours.slice(m+1)
+                                        break
                                     }
                                 }
 
-                                //on merge fail, insert the previous contour again and skip
-                                catch(error) {
-                                    console.log('merge failed at elevation '+currentElevation)
-                                    console.log(error.message)
-                                }
-
-                                //ONCE merging finished, draw the DEM
-                                if (x === eleList.length-1) {
-
-                                    console.log('merge operation took '+(Date.now()-prevMilestone)+'ms')
-                                    prevMilestone=Date.now()
-
-                                    //remove contour undercuts
-                                    for (var m=contours.length-2; m>=0; m--){
-                                        var currContour= contours[m]
-                                        var prevContour= contours[m+1]
-                                        if (currContour.area>= maxArea && prevContour.area>=maxArea){
-                                            console.log('max area reached!')
-                                            contours=contours.slice(m+1)
-                                            break
-                                        }
-                                    }
-
-                                    //drawHistogram(contours.map(function(contour){return contour.area}))
-                                    //drawRain(origin)
-                                    drawDEM(contours, northWest,southEast,radius)
-                                }
+                                //drawHistogram(contours.map(function(contour){return contour.area}))
+                                //drawRain(origin)
+                                drawDEM(contours, northWest,southEast,radius)
                             }
                         }
+                    }
                 }); // end of xhr
             }); // end of tilesCovered.forEach
         };
