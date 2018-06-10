@@ -143,6 +143,12 @@ let data = (() => {
     };
 
     // ======== for adding tiles (async)
+
+    const processTile = (tile) => {
+
+    };
+
+
     // This function is an adaptation of peterqliu.github.io/bundle.js
     const addTiles = () => {
         let origin = [36.2058, -112.4413];
@@ -209,12 +215,28 @@ let data = (() => {
             // for each tile triplet (identified as z-x-y),
             // download corresponding PBF and convert to geoJSON
             const api = 'https://a.tiles.mapbox.com/v4/mapbox.mapbox-terrain-v2';
-            // TODO save token in env??????????
             const token = `${env.token}`;
             console.log('token:', token);
+
             tilesCovered.forEach((zoompos, index) => {
                 console.log('DOWNLOADING TILE');
+
                 if (index > 0) return; //!!!!!!!!!!!!!!!!!!!!!!!
+                xhr({
+                    uri: "/dist/blob.dat",
+                    responseType: 'blob',
+                }, (error, response, blob) => {
+                    console.log('blob:', blob);
+                    // https://stackoverflow.com/questions/15341912/how-to-go-from-blob-to-arraybuffer
+                    let fr = new FileReader();
+                    fr.onload = (e) => {
+                        let arrayBuffer = e.target.result;
+                        console.log('arrayBuffer:', arrayBuffer);
+                    };
+                    fr.readAsArrayBuffer(blob);
+                });
+                // if (index == 0) return; //!!!!!!!!!!!!!!!!!!!!!!!
+
                 xhr({
                     uri: `${api}/${zoompos[2]}/${zoompos[0]}/${zoompos[1]}.vector.pbf?access_token=${token}`,
                     responseType: 'arraybuffer',
@@ -224,12 +246,22 @@ let data = (() => {
                         alert(error);
                         return;
                     };
-                    console.log('buffer:', buffer);
+                    console.log('buffer:', buffer); // ArrayBuffer(39353) {}
+
+                    if (0) {
+                        // https://discourse.threejs.org/t/how-to-create-a-new-file-and-save-it-with-arraybuffer-content/628/2
+                        let file = new Blob([buffer], {type: "application/octet-stream"});
+                        let a = document.createElement("a");
+                        a.href = URL.createObjectURL(file);
+                        a.download = "blob.dat";
+                        document.body.appendChild(a);
+                        a.click();
+                    }
                     return; //!!!!!!!!!!!!!!!
 
                     var tile = new VectorTile(new Pbf(buffer));
                     //populate geoJSON
-                    for (var i=0; i<tile.layers.contour.length; i++){
+                    for (var i = 0; i < tile.layers.contour.length; i++) {
                         //convert each feature (within #population) into a geoJSON polygon, and push it into our variable
                         var feature = tile.layers.contour.feature(i).toGeoJSON(zoompos[0], zoompos[1], zoompos[2]);
                         if (i===0) bottomTiles.push(feature)
@@ -401,7 +433,7 @@ let data = (() => {
                 laser.clearPoints();
             }
             // = 1(src point) + #(reflection points) + 1(end point)
-            console.log('#points:', laser.getPoints().length);
+            // console.log('#points:', laser.getPoints().length);
         },
         config: config,
     };
