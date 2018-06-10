@@ -147,7 +147,7 @@ let data = (() => {
 
     // ======== for adding tiles (async)
 
-    const processTile = (tile, zoompos, bottomTiles, geojson) => {
+    const processTile = (tile, zoompos, geojson, bottomTiles) => {
         //populate geoJSON
         for (let i = 0; i < tile.layers.contour.length; i++) {
             // convert each feature (within #population) into a geoJSON polygon,
@@ -171,14 +171,16 @@ let data = (() => {
             }
         }
     };
-    const getEleList = (bottomTiles, geojson) => {
+    const getEleList = (geojson) => {
         let mapper = (feature) => { return feature.properties.ele; };
-        let eleList = uniq(geojson.features.map(mapper))
+        return uniq(geojson.features.map(mapper))
             .sort((a,b) => { return a-b; });
-
+    };
+    const addBottomEle = (geojson, bottomTiles, eleList) => {
         bottomTiles.forEach((bottom) => {
             let tileBottomEle = bottom.properties.ele;
             for (let k = eleList[0]; k < tileBottomEle; k += 10) {
+                // console.log('k:', k);
                 geojson.features.push({
                     type: "Feature",
                     geometry: bottom.geometry,
@@ -186,7 +188,6 @@ let data = (() => {
                 });
             }
         });
-        return eleList;
     };
 
     // This function is an adaptation of
@@ -278,12 +279,13 @@ let data = (() => {
                         let tile = new VectorTile(new Pbf(buffer));
                         console.log('tile:', tile);
 
-                        processTile(tile, zoompos, bottomTiles, geojson);
+                        processTile(tile, zoompos, geojson, bottomTiles);
                         console.log('bottomTiles:', bottomTiles);
-                        console.log('geojson:', geojson);
 
-                        let eleList = getEleList(bottomTiles, geojson);
+                        let eleList = getEleList(geojson);
                         console.log('eleList:', eleList);
+                        addBottomEle(geojson, bottomTiles, eleList);
+                        console.log('geojson:', geojson);
 
                     };
                     fr.readAsArrayBuffer(blob);
@@ -313,7 +315,7 @@ let data = (() => {
                     return; //!!!!!!!!!!!!!!!
 
                     let tile = new VectorTile(new Pbf(buffer));
-                    processTile(tile, zoompos, bottomTiles, geojson);
+                    processTile(tile, zoompos, geojson, bottomTiles);
 
                     // ONCE all tiles have been downloaded,
                     // get a list of all elevations used
@@ -321,10 +323,13 @@ let data = (() => {
                         console.log('finished downloading in '+(Date.now()-prevMilestone)+'ms');
                         prevMilestone = Date.now();
 
-                        let eleList = getEleList(bottomTiles, geojson);
+                        let eleList = getEleList(geojson);
                         console.log('eleList:', eleList);
+                        addBottomEle(geojson, bottomTiles, eleList);
+                        console.log('geojson:', geojson);
 
-                        //iterate through elevations, and merge polys of the same elevation
+                        // iterate through elevations,
+                        // and merge polys of the same elevation
                         for (var x = 0; x < eleList.length; x++) {
                             var currentElevation=eleList[x]
                             var elevationPolys =
