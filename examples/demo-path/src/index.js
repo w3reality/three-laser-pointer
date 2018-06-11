@@ -113,7 +113,7 @@ let data = (() => {
     scene.add(walls);
 
     //======== for adding model (async)
-    const addModel = (scene, cb) => {
+    const getModel = (cb) => {
         let onProgress = (xhr) => {
             if (xhr.lengthComputable) {
                 let percentComplete = xhr.loaded / xhr.total * 100;
@@ -140,7 +140,6 @@ let data = (() => {
                             mesh.geometry.scale(0.05, 0.05, 0.05);
                             // mesh.scale.set(0.05, 0.05, 0.05);
                         })
-                        scene.add(object);
                         cb(object);
                     }, onProgress, onError);
             });
@@ -190,7 +189,7 @@ let data = (() => {
             }
         });
     };
-    const getContours = (eleList, geojson, polygon) => {
+    const getContours = (eleList, geojson, polygon, maxArea) => {
         let contours = [];
 
         // iterate through elevations, and merge polys of the same elevation
@@ -240,15 +239,46 @@ let data = (() => {
             }
         }
 
+        // remove contour undercuts
+        for (let m = contours.length-2; m >= 0; m--) {
+            var currContour = contours[m];
+            var prevContour = contours[m+1];
+            if (currContour.area >= maxArea && prevContour.area >= maxArea) {
+                console.log('max area reached!');
+                contours = contours.slice(m+1);
+                break;
+            }
+        }
+
         return contours;
     };
+    const getDem = (contours, northWest, southEast, radius, cb) => {
+        console.log('drawDEM():', contours, northWest, southEast, radius);
+
+
+
+
+
+        // FIXME fakeeeeeeeeeeeeeeeeee
+        let mesh = new THREE.Mesh(
+            new THREE.BoxGeometry( 1.0, 1.0, 1.5 ),
+            new THREE.MeshPhongMaterial({
+                color: 0x00ff00,
+                wireframe: true,
+                opacity: 1,
+                transparent: true,
+            }));
+        cb(mesh);
+    };
+
 
     // This function is an adaptation of
     // https://github.com/peterqliu/peterqliu.github.io/bundle.js
-    const addTiles = () => {
+    const getTiles = (cb) => {
         let origin = [36.2058, -112.4413];
         let radius = 5;
         let maxArea = radius*radius*2*1000000;
+
         const getBbox = (origin, radius) => {
             const reverseCoords = (coords) => {
                 return [coords[1], coords[0]];
@@ -294,7 +324,7 @@ let data = (() => {
         // given the isochrone polygon,
         // identify the relevant tiles (via tile-cover),
         // request those tile pbfs, translate into geoJSONs
-        const getBlocks = (polygon) => {
+        const getBlocks = (polygon, maxArea, cb) => {
             let limits = {
                 min_zoom: 14,
                 max_zoom: 14,
@@ -314,12 +344,11 @@ let data = (() => {
             const token = `${env.token}`;
             console.log('token:', token);
 
-            let prevMilestone = Date.now();
+            tilesCovered.length = 1; // debug truncate!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
             tilesCovered.forEach((zoompos, index) => {
                 console.log('DOWNLOADING TILE');
 
-                if (index > 0) return; //!!!!!!!!!!!!!!!!!!!!!!!
                 xhr({
                     uri: "/dist/blob.dat",
                     responseType: 'blob',
@@ -336,6 +365,7 @@ let data = (() => {
                         processTile(tile, zoompos, geojson, bottomTiles);
                         console.log('bottomTiles:', bottomTiles);
 
+                        // assume only tile to dl !!!!!!!!!!!!!!!!!
                         let eleList = getEleList(geojson);
                         console.log('eleList:', eleList);
                         addBottomEle(geojson, bottomTiles, eleList);
@@ -344,10 +374,12 @@ let data = (() => {
                         let contours = getContours(eleList, geojson, polygon);
                         console.log('contours:', contours);
 
+                        cb(contours);
                     };
                     fr.readAsArrayBuffer(blob);
                 });
-                if (index === 0) return; //!!!!!!!!!!!!!!!!!!!!!!!
+
+                return; //!!!!!!!!!!!!!!!!!!!!!!!
 
                 xhr({
                     uri: `${api}/${zoompos[2]}/${zoompos[0]}/${zoompos[1]}.vector.pbf?access_token=${token}`,
@@ -369,54 +401,38 @@ let data = (() => {
                         document.body.appendChild(a);
                         a.click();
                     }
-                    return; //!!!!!!!!!!!!!!!
+                    // return; //!!!!!!!!!!!!!!!
 
                     let tile = new VectorTile(new Pbf(buffer));
                     processTile(tile, zoompos, geojson, bottomTiles);
 
-                    // ONCE all tiles have been downloaded,
-                    // get a list of all elevations used
                     if (queryCount === tilesCovered.length) {
-                        console.log('finished downloading in '+(Date.now()-prevMilestone)+'ms');
-                        prevMilestone = Date.now();
+                        console.log('finished downloading at '+Date.now());
 
                         let eleList = getEleList(geojson);
                         console.log('eleList:', eleList);
                         addBottomEle(geojson, bottomTiles, eleList);
                         console.log('geojson:', geojson);
 
-                        let contours = getContours(eleList, geojson, polygon);
+                        let contours = getContours(eleList, geojson, polygon, maxArea);
                         console.log('contours:', contours);
-
-                        // ONCE merging finished, draw the DEM
-                        // if (x === eleList.length-1) {
-                            console.log('merge operation took '+(Date.now()-prevMilestone)+'ms');
-                            prevMilestone = Date.now();
-
-                            //remove contour undercuts
-                            for (var m=contours.length-2; m>=0; m--){
-                                var currContour= contours[m]
-                                var prevContour= contours[m+1]
-                                if (currContour.area>= maxArea && prevContour.area>=maxArea){
-                                    console.log('max area reached!')
-                                    contours=contours.slice(m+1)
-                                    break
-                                }
-                            }
-
-                            //drawHistogram(contours.map(function(contour){return contour.area}))
-                            //drawRain(origin)
-                            drawDEM(contours, northWest,southEast,radius)
-                        // }
+                        console.log('got contours at '+Date.now());
+                        cb(contours);
                     }
                 }); // end of xhr
             }); // end of tilesCovered.forEach
         };
-        getBlocks(bbox.feature);
+        getBlocks(bbox.feature, maxArea, (contours) => {
+            // drawHistogram(contours.map((contour) => {
+            //     return contour.area;
+            // }));
+            // drawRain(origin);
+            // drawDEM(contours, bbox.northWest, bbox.southEast, radius);
+            //========
+            getDem(contours, bbox.northWest, bbox.southEast, radius, cb);
+        });
 
     };
-    console.log('zzzxx2211');
-    addTiles();
 
     //======== add laser
     if (0) {
@@ -432,14 +448,17 @@ let data = (() => {
 
     // register all meshes
     const meshes = [];
-//    addModel(scene, (model) => {  // add model async
+
+    // getModel((mesh) => {  // async
+    getTiles((mesh) => {  // async
+        scene.add(mesh);
         scene.traverse((node) => {
             // console.log('node.type:', node.type, node.name);
             if (node instanceof THREE.Mesh) {
                 meshes.push(node);
             }
         });
-//    });
+    });
 
 
     const config = { // defaults
