@@ -12,6 +12,8 @@ Demo: https://w3reality.github.io/three-laser-pointer/examples/demo-with-raycast
 ..
    :width: 640
 
+.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-path/dist/dem-vectors.png
+
 
 Build
 -----
