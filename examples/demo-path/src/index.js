@@ -12,6 +12,7 @@ console.log('LaserPointer:', LaserPointer);
 
 import env from './env.js';
 import * as turf from '@turf/turf'; // http://turfjs.org/getting-started/
+// console.log('turf:', turf);
 import cover from '@mapbox/tile-cover';
 import xhr from 'xhr';
 import Pbf from 'pbf';
@@ -189,6 +190,58 @@ let data = (() => {
             }
         });
     };
+    const getContours = (eleList, geojson, polygon) => {
+        let contours = [];
+
+        // iterate through elevations, and merge polys of the same elevation
+        for (let x = 0; x < eleList.length; x++) {
+            let currentElevation = eleList[x];
+            let elevationPolys = geojson.features.filter((feature) => {
+                return feature.properties.ele === currentElevation;
+            });
+
+            // merge between tiles
+            try {
+                // this was commented...
+                // let mergedElevationPoly = tbuffer(
+                //     turf.featureCollection(elevationPolys), 0, 'miles').features[0];
+                //========
+                // this was being used...
+                // let mergedElevationPoly = turf.merge(
+                //     turf.featureCollection(elevationPolys));
+                //========
+                // - turf.merge is deprecated, so...
+                // - https://github.com/turf-junkyard/turf-merge
+                //     This module is now deprecated in favor of using
+                //     the turf-union module repeatedly on an array.
+                // - https://gis.stackexchange.com/questions/243460/turf-js-union-with-array-of-features
+                // console.log('feat collection:', turf.featureCollection(elevationPolys));
+                let mergedElevationPoly = turf.union.apply(
+                    this, turf.featureCollection(elevationPolys).features);
+
+                // trim to desired search area
+                mergedElevationPoly = turf.intersect(
+                    polygon, mergedElevationPoly);
+
+                if (mergedElevationPoly) {
+                    let contourArea = turf.area(mergedElevationPoly.geometry);
+                    // FIXME: ???????? ???????? ???????? ????????
+                    // L.mapbox.featureLayer().setGeoJSON(mergedElevationPoly).addTo(map);
+
+                    contours.push({
+                        'geometry': mergedElevationPoly,
+                        'ele': currentElevation,
+                        'area': contourArea,
+                    });
+                }
+            } catch (error) { // on merge fail, insert the previous contour again and skip
+                console.log('merge failed at elevation '+currentElevation);
+                console.log(error.message);
+            }
+        }
+
+        return contours;
+    };
 
     // This function is an adaptation of
     // https://github.com/peterqliu/peterqliu.github.io/bundle.js
@@ -220,7 +273,8 @@ let data = (() => {
                     }
                 }]
             };
-            testPolygon.features[0].geometry.coordinates[0] = [
+            let polygon = testPolygon.features[0];
+            polygon.geometry.coordinates[0] = [
                 northWest,
                 [southEast[0], northWest[1]],
                 southEast,
@@ -229,7 +283,7 @@ let data = (() => {
             ];
             // console.log('testPolygon:', testPolygon);
             return {
-                feature: testPolygon.features[0],
+                feature: polygon,
                 northWest: northWest,
                 southEast: southEast,
             };
@@ -287,6 +341,9 @@ let data = (() => {
                         addBottomEle(geojson, bottomTiles, eleList);
                         console.log('geojson:', geojson);
 
+                        let contours = getContours(eleList, geojson, polygon);
+                        console.log('contours:', contours);
+
                     };
                     fr.readAsArrayBuffer(blob);
                 });
@@ -328,58 +385,29 @@ let data = (() => {
                         addBottomEle(geojson, bottomTiles, eleList);
                         console.log('geojson:', geojson);
 
-                        // iterate through elevations,
-                        // and merge polys of the same elevation
-                        for (var x = 0; x < eleList.length; x++) {
-                            var currentElevation=eleList[x]
-                            var elevationPolys =
-                            geojson.features.filter(function(feature){return feature.properties.ele === currentElevation})
+                        let contours = getContours(eleList, geojson, polygon);
+                        console.log('contours:', contours);
 
-                            if (currentElevation===1220) console.log(elevationPolys)
+                        // ONCE merging finished, draw the DEM
+                        // if (x === eleList.length-1) {
+                            console.log('merge operation took '+(Date.now()-prevMilestone)+'ms');
+                            prevMilestone = Date.now();
 
-                            //merge between tiles
-                            try {
-                                //var mergedElevationPoly = tbuffer(turf.featurecollection(elevationPolys),0, 'miles').features[0]
-                                var mergedElevationPoly = turf.merge(turf.featurecollection(elevationPolys))
-                                // trim to desired search area
-                                mergedElevationPoly = turf.intersect(testPolygon.features[0], mergedElevationPoly)
-
-                                if (mergedElevationPoly) {
-                                    var contourArea = turf.area(mergedElevationPoly.geometry);
-                                    L.mapbox.featureLayer().setGeoJSON(mergedElevationPoly).addTo(map)
-
-                                    contours.push({
-                                        'geometry':mergedElevationPoly,
-                                        'ele':currentElevation,
-                                        'area': contourArea
-                                    });
+                            //remove contour undercuts
+                            for (var m=contours.length-2; m>=0; m--){
+                                var currContour= contours[m]
+                                var prevContour= contours[m+1]
+                                if (currContour.area>= maxArea && prevContour.area>=maxArea){
+                                    console.log('max area reached!')
+                                    contours=contours.slice(m+1)
+                                    break
                                 }
-                            } catch (error) { // on merge fail, insert the previous contour again and skip
-                                console.log('merge failed at elevation '+currentElevation)
-                                console.log(error.message)
                             }
 
-                            //ONCE merging finished, draw the DEM
-                            if (x === eleList.length-1) {
-                                console.log('merge operation took '+(Date.now()-prevMilestone)+'ms');
-                                prevMilestone = Date.now();
-
-                                //remove contour undercuts
-                                for (var m=contours.length-2; m>=0; m--){
-                                    var currContour= contours[m]
-                                    var prevContour= contours[m+1]
-                                    if (currContour.area>= maxArea && prevContour.area>=maxArea){
-                                        console.log('max area reached!')
-                                        contours=contours.slice(m+1)
-                                        break
-                                    }
-                                }
-
-                                //drawHistogram(contours.map(function(contour){return contour.area}))
-                                //drawRain(origin)
-                                drawDEM(contours, northWest,southEast,radius)
-                            }
-                        }
+                            //drawHistogram(contours.map(function(contour){return contour.area}))
+                            //drawRain(origin)
+                            drawDEM(contours, northWest,southEast,radius)
+                        // }
                     }
                 }); // end of xhr
             }); // end of tilesCovered.forEach
@@ -404,14 +432,14 @@ let data = (() => {
 
     // register all meshes
     const meshes = [];
-    addModel(scene, (model) => {  // add model async
+//    addModel(scene, (model) => {  // add model async
         scene.traverse((node) => {
             // console.log('node.type:', node.type, node.name);
             if (node instanceof THREE.Mesh) {
                 meshes.push(node);
             }
         });
-    });
+//    });
 
 
     const config = { // defaults
