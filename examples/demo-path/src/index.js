@@ -146,7 +146,6 @@ let data = (() => {
     };
 
     // ======== for adding tiles (async)
-
     const processTile = (tile, zoompos, geojson, bottomTiles) => {
         //populate geoJSON
         for (let i = 0; i < tile.layers.contour.length; i++) {
@@ -252,23 +251,115 @@ let data = (() => {
 
         return contours;
     };
-    const getDem = (contours, northWest, southEast, radius, cb) => {
-        console.log('drawDEM():', contours, northWest, southEast, radius);
+    const buildSliceGeometry =
+        (coords, iContour, contours, northWest, southEast, radius) => {
+        const pixelPerMeter = 150 / (radius * Math.pow(2, 0.5) * 1000);
+        const shadedContour = new THREE.Shape();
+        const wireframeContours = [new THREE.Geometry()];
 
+        const projectCoord = (coord) => {
+            let projected = [];
+            // convert latlngs into pixel coordinates
+            projected[0] = 150 - (coord[0]-northWest[0]) / (southEast[0]-northWest[0]) * 150;
+            projected[1] =       (coord[1]-southEast[1]) / (northWest[1]-southEast[1]) * 150;
+            return projected;
+        };
+        const h = iContour;
+        const pz = - (contours[h].ele - contours[0].ele) * pixelPerMeter;
 
+        // iterate through vertices per shape
+        for (let x = 0; x < coords[0].length; x++) {
+            let [px, py] = projectCoord(coords[0][x]);
+            wireframeContours[0].vertices.push(
+                new THREE.Vector3(px, py, pz));
+            if (x === 0) {
+                shadedContour.moveTo(px, py);
+            } else {
+                shadedContour.lineTo(px, py);
+            }
+        }
 
+        // carve out holes (if none, would automatically skip this)
+        for (let k = 1; k < coords.length; k++) {
+            let holePath = new THREE.Path();
+            wireframeContours.push(new THREE.Geometry());
 
+            // iterate through hole path vertices
+            for (let j = 0; j < coords[k].length; j++) {
+                let [px, py] = projectCoord(coords[k][j]);
+                wireframeContours[k].vertices.push(
+                    new THREE.Vector3(px, py, pz));
+                if (j === 0) {
+                    holePath.moveTo(px, py);
+                } else {
+                    holePath.lineTo(px, py);
+                }
+            }
+            shadedContour.holes.push(holePath);
+        }
 
-        // FIXME fakeeeeeeeeeeeeeeeeee
-        let mesh = new THREE.Mesh(
-            new THREE.BoxGeometry( 1.0, 1.0, 1.5 ),
-            new THREE.MeshPhongMaterial({
+        const lines = [];
+        wireframeContours.forEach((_loop, _index) => {
+            let line = new THREE.Line(
+                wireframeContours[0],
+                new THREE.LineBasicMaterial({
+                    color: 0xcccccc
+                }));
+            line.position.x = -75;
+            line.position.z = -75;
+            line.position.y = 10; // !!!!!!!!!!!! debug
+            line.rotation.x = Math.PI/2;
+            // line.visible = false;
+            lines.push(line);
+        });
+
+        let extrudeGeom = new THREE.ExtrudeGeometry(shadedContour, {
+            depth: contours[h+1] ?
+                pixelPerMeter*(contours[h+1].ele-contours[h].ele) :
+                pixelPerMeter*(contours[h].ele-contours[h-1].ele),
+            bevelEnabled: false,
+        });
+        let extrudeShade = new THREE.Mesh(
+            extrudeGeom, new THREE.MeshBasicMaterial({
+                // color: colorRange(h), // TODO
                 color: 0x00ff00,
+                // wireframe: false,
                 wireframe: true,
-                opacity: 1,
-                transparent: true,
-            }));
-        cb(mesh);
+            }),
+        );
+        extrudeShade.rotation.x = Math.PI/2;
+        extrudeShade.position.x = -75;
+        extrudeShade.position.z = -75;
+        extrudeShade.position.y = -pz;
+        extrudeShade.name = contours[h].ele;
+
+        return [lines, extrudeShade];
+    };
+    const getDem = (contours, northWest, southEast, radius, cb) => {
+        // console.log('getDem():', contours, northWest, southEast, radius);
+        const objs = [];
+        const addSlice = (coords, iContour) => {
+            let [lines, extrudeShade] = buildSliceGeometry(
+                coords, iContour,
+                contours, northWest, southEast, radius);
+            lines.forEach((line) => { objs.push(line); });
+            objs.push(extrudeShade);
+        };
+
+        // iterate through elevations
+        for (let iContour = 0; iContour < contours.length; iContour++) {
+            let level = contours[iContour].geometry.geometry;
+            if (level.type === 'Polygon') {
+                addSlice(level.coordinates, iContour);
+            } else if (level.type === 'MultiPolygon') {
+                // iterate through shapes per elevation
+                for (let i = 0; i < level.coordinates.length; i++) {
+                    addSlice(level.coordinates[i], iContour);
+                }
+            }
+        }
+
+        cb(objs);
     };
 
 
@@ -277,7 +368,7 @@ let data = (() => {
     const getTiles = (cb) => {
         let origin = [36.2058, -112.4413];
         let radius = 5;
-        let maxArea = radius*radius*2*1000000;
+        let maxArea = radius * radius * 2 * 1000000;
 
         const getBbox = (origin, radius) => {
             const reverseCoords = (coords) => {
@@ -450,8 +541,9 @@ let data = (() => {
     const meshes = [];
 
     // getModel((mesh) => {  // async
-    getTiles((mesh) => {  // async
-        scene.add(mesh);
+    //     scene.add(mesh);
+    getTiles((objs) => {  // async
+        objs.forEach((obj) => { scene.add(obj); });
         scene.traverse((node) => {
             // console.log('node.type:', node.type, node.name);
             if (node instanceof THREE.Mesh) {
