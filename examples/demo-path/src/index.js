@@ -18,7 +18,8 @@ import xhr from 'xhr';
 import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import uniq from 'uniq';
-
+import * as d3 from 'd3';
+// console.log('d3:', d3);
 
 // begin -------- how to use DatGuiDefaults
 if (0) {
@@ -251,8 +252,8 @@ let data = (() => {
 
         return contours;
     };
-    const buildSliceGeometry =
-        (coords, iContour, contours, northWest, southEast, radius) => {
+    const buildSliceGeometry = (coords, iContour, color,
+        contours, northWest, southEast, radius) => {
         const pixelPerMeter = 150 / (radius * Math.pow(2, 0.5) * 1000);
         const shadedContour = new THREE.Shape();
         const wireframeContours = [new THREE.Geometry()];
@@ -321,10 +322,9 @@ let data = (() => {
         });
         let extrudeShade = new THREE.Mesh(
             extrudeGeom, new THREE.MeshBasicMaterial({
-                // color: colorRange(h), // TODO
-                color: 0x00ff00,
-                // wireframe: false,
-                wireframe: true,
+                color: color,
+                wireframe: false,
+                // wireframe: true,
             }),
         );
         extrudeShade.rotation.x = Math.PI/2;
@@ -337,10 +337,16 @@ let data = (() => {
     };
     const getDem = (contours, northWest, southEast, radius, cb) => {
         // console.log('getDem():', contours, northWest, southEast, radius);
+
+        const colorRange = d3.scaleLinear()
+            .domain([0, contours.length])
+            .interpolate(d3.interpolateRgb)
+            .range(["#231918", "#ed6356"]);
+
         const objs = [];
         const addSlice = (coords, iContour) => {
             let [lines, extrudeShade] = buildSliceGeometry(
-                coords, iContour,
+                coords, iContour, colorRange(iContour),
                 contours, northWest, southEast, radius);
             lines.forEach((line) => { objs.push(line); });
             objs.push(extrudeShade);
