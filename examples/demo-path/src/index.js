@@ -11,14 +11,14 @@ import LaserPointer from '../../../src'; // for dev
 console.log('LaserPointer:', LaserPointer);
 
 import env from './env.js';
-import * as turf from '@turf/turf'; // http://turfjs.org/getting-started/
+import * as turf from '@turf/turf'; // TODO selective - http://turfjs.org/getting-started/
 // console.log('turf:', turf);
 import cover from '@mapbox/tile-cover';
 import xhr from 'xhr';
 import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import uniq from 'uniq';
-import * as d3 from 'd3';
+import * as d3 from 'd3'; // TODO selective - https://github.com/d3/d3
 // console.log('d3:', d3);
 
 // begin -------- how to use DatGuiDefaults
@@ -100,16 +100,20 @@ let data = (() => {
     light.position.set( 1, 1, 1 ).normalize();
     scene.add( light );
 
-    //======== add walls
+    //======== add more
+    let axesHelper = new THREE.AxesHelper( 10 );
+    scene.add( axesHelper );
+
     let walls = new THREE.Mesh(
-        new THREE.BoxGeometry( 8, 6.0, 4.5 ),
+        new THREE.BoxGeometry( 10, 10, 10 ),
         new THREE.MeshPhongMaterial({
             color: 0xc0e0c0,
             side: THREE.BackSide,
+            wireframe: true,
             opacity: 1,
             transparent: true,
         }));
-    walls.rotation.y = Math.PI / 6;
+    // walls.rotation.y = Math.PI / 6;
     walls.name = "walls";
     scene.add(walls);
 
@@ -308,7 +312,7 @@ let data = (() => {
                 }));
             line.position.x = -75;
             line.position.z = -75;
-            line.position.y = 10; // !!!!!!!!!!!! debug
+            // line.position.y = 10; // !!!!!!!!!!!! debug
             line.rotation.x = Math.PI/2;
             // line.visible = false;
             lines.push(line);
@@ -316,8 +320,8 @@ let data = (() => {
 
         let extrudeGeom = new THREE.ExtrudeGeometry(shadedContour, {
             depth: contours[h+1] ?
-                pixelPerMeter*(contours[h+1].ele-contours[h].ele) :
-                pixelPerMeter*(contours[h].ele-contours[h-1].ele),
+                pixelPerMeter * (contours[h+1].ele - contours[h].ele) :
+                pixelPerMeter * (contours[h].ele - contours[h-1].ele),
             bevelEnabled: false,
         });
         let extrudeShade = new THREE.Mesh(
@@ -367,7 +371,6 @@ let data = (() => {
 
         cb(objs);
     };
-
 
     // This function is an adaptation of
     // https://github.com/peterqliu/peterqliu.github.io/bundle.js
@@ -422,12 +425,22 @@ let data = (() => {
         // identify the relevant tiles (via tile-cover),
         // request those tile pbfs, translate into geoJSONs
         const getBlocks = (polygon, maxArea, cb) => {
+            // https://www.mapbox.com/vector-tiles/mapbox-terrain/#contour
+            // Zoom level  Contour Interval
+            // 9  500 meters
+            // 10  200 meters
+            // 11  100 meters
+            // 12  50 meters
+            // 13  20 meters
+            // 14+  10 meters
             let limits = {
                 min_zoom: 14,
                 max_zoom: 14,
             };
             let tilesCovered = cover.tiles(polygon.geometry, limits);
             console.log(`about to download ${tilesCovered.length} tiles`);
+            console.log('tilesCovered:', tilesCovered);
+            // return; //!!!!!!!!!
 
             let geojson = {
                 type: "FeatureCollection",
@@ -441,42 +454,45 @@ let data = (() => {
             const token = `${env.token}`;
             console.log('token:', token);
 
-            tilesCovered.length = 1; // debug truncate!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            tilesCovered = [[3072, 6420, 14],]; // debug, to one elem, overriding!!!!!!!!!!!!!!!!!!!!!
+            // tilesCovered = [[3073, 6420, 14],]; // debug, to one elem, overriding!!!!!!!!!!!!!!!!!!!!!
 
             tilesCovered.forEach((zoompos, index) => {
                 console.log('DOWNLOADING TILE');
 
-                xhr({
-                    uri: "/dist/blob.dat",
-                    responseType: 'blob',
-                }, (error, response, blob) => {
-                    console.log('blob:', blob);
-                    // https://stackoverflow.com/questions/15341912/how-to-go-from-blob-to-arraybuffer
-                    let fr = new FileReader();
-                    fr.onload = (e) => {
-                        let buffer = e.target.result;
-                        console.log('arrayBuffer:', buffer); // ArrayBuffer(39353) {}
-                        let tile = new VectorTile(new Pbf(buffer));
-                        console.log('tile:', tile);
+                if (1) {
+                    let uri = `blob-vector-${zoompos[2]}-${zoompos[0]}-${zoompos[1]}.dat`; // !!!!!!!!
+                    xhr({
+                        uri: uri,
+                        responseType: 'blob',
+                    }, (error, response, blob) => {
+                        console.log('blob:', blob);
+                        // https://stackoverflow.com/questions/15341912/how-to-go-from-blob-to-arraybuffer
+                        let fr = new FileReader();
+                        fr.onload = (e) => {
+                            let buffer = e.target.result;
+                            console.log('arrayBuffer:', buffer); // ArrayBuffer(39353) {}
+                            let tile = new VectorTile(new Pbf(buffer));
+                            console.log('tile:', tile);
 
-                        processTile(tile, zoompos, geojson, bottomTiles);
-                        console.log('bottomTiles:', bottomTiles);
+                            processTile(tile, zoompos, geojson, bottomTiles);
+                            console.log('bottomTiles:', bottomTiles);
 
-                        // assume only tile to dl !!!!!!!!!!!!!!!!!
-                        let eleList = getEleList(geojson);
-                        console.log('eleList:', eleList);
-                        addBottomEle(geojson, bottomTiles, eleList);
-                        console.log('geojson:', geojson);
+                            // assume only tile to dl !!!!!!!!!!!!!!!!!
+                            let eleList = getEleList(geojson);
+                            console.log('eleList:', eleList);
+                            addBottomEle(geojson, bottomTiles, eleList);
+                            console.log('geojson:', geojson);
 
-                        let contours = getContours(eleList, geojson, polygon);
-                        console.log('contours:', contours);
+                            let contours = getContours(eleList, geojson, polygon);
+                            console.log('contours:', contours);
 
-                        cb(contours);
-                    };
-                    fr.readAsArrayBuffer(blob);
-                });
-
-                return; //!!!!!!!!!!!!!!!!!!!!!!!
+                            cb(contours);
+                        };
+                        fr.readAsArrayBuffer(blob);
+                    });
+                    return; //!!!!!!!!!!!!!!!!!!!!!!!
+                }
 
                 xhr({
                     uri: `${api}/${zoompos[2]}/${zoompos[0]}/${zoompos[1]}.vector.pbf?access_token=${token}`,
@@ -494,7 +510,7 @@ let data = (() => {
                         let file = new Blob([buffer], {type: "application/octet-stream"});
                         let a = document.createElement("a");
                         a.href = URL.createObjectURL(file);
-                        a.download = "blob.dat";
+                        a.download = `blob-vector-${zoompos[2]}-${zoompos[0]}-${zoompos[1]}.dat`;
                         document.body.appendChild(a);
                         a.click();
                     }
@@ -528,7 +544,6 @@ let data = (() => {
             //========
             getDem(contours, bbox.northWest, bbox.southEast, radius, cb);
         });
-
     };
 
     //======== add laser
@@ -539,7 +554,7 @@ let data = (() => {
     }
 
     let laser = new LaserPointer.Laser({
-        color: 0xffffff
+        color: 0xffffff,
     });
     scene.add(laser);
 
@@ -573,6 +588,7 @@ let data = (() => {
             if (isect !== null) {
                 // console.log('isect:', isect);
                 let pt = isect.point;
+                // console.log('pt:', pt);
 
                 if (config.source == "VR-like") {
                     laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), cam);
