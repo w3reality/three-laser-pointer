@@ -365,7 +365,7 @@ let data = (() => {
             let [lines, extrudeShade] = buildSliceGeometry(
                 coords, iContour, colorRange(iContour),
                 contours, northWest, southEast, radius);
-            // lines.forEach((line) => { objs.push(line); });
+            lines.forEach((line) => { objs.push(line); });
             objs.push(extrudeShade);
         };
 
@@ -459,7 +459,6 @@ let data = (() => {
                 type: "FeatureCollection",
                 features: [],
             };
-            let queryCount = 0;
             let bottomTiles = [];
             // for each tile triplet (identified as z-x-y),
             // download corresponding PBF and convert to geoJSON
@@ -468,8 +467,9 @@ let data = (() => {
             console.log('token:', token);
 
             // tilesCovered = [[3072, 6420, 14],]; // debug, to one elem, overriding!!!!!!!!!!!!!!!!!!!!!
-            tilesCovered.length = 10;
+            // tilesCovered.length = 2;
 
+            let queryCount = 0; // TODO use Promise() instead...
             tilesCovered.forEach((zoompos, index) => {
                 console.log('DOWNLOADING TILE');
 
@@ -479,7 +479,6 @@ let data = (() => {
                         uri: uri,
                         responseType: 'blob',
                     }, (error, response, blob) => {
-                        queryCount++;
                         console.log('blob:', blob);
                         // https://stackoverflow.com/questions/15341912/how-to-go-from-blob-to-arraybuffer
                         let fr = new FileReader();
@@ -492,7 +491,7 @@ let data = (() => {
                             processTile(tile, zoompos, geojson, bottomTiles);
                             console.log('bottomTiles:', bottomTiles);
 
-                            // assume only tile to dl !!!!!!!!!!!!!!!!!
+                            queryCount++;
                             if (queryCount === tilesCovered.length) {
                                 let eleList = getEleList(geojson);
                                 console.log('eleList:', eleList);
