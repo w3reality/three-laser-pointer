@@ -11,14 +11,21 @@ import LaserPointer from '../../../src'; // for dev
 console.log('LaserPointer:', LaserPointer);
 
 import env from './env.js';
-import * as turf from '@turf/turf'; // TODO selective - http://turfjs.org/getting-started/
+
+import * as turf from '@turf/turf'; // TODO be selective - http://turfjs.org/getting-started/
 // console.log('turf:', turf);
+
+// turf.intersect (v5.1.6) fails in case MultiPolygon -- https://github.com/Turfjs/turf/issues/702
+// so, use this module version with recent fix instead
+import turfIntersect from '@turf/intersect';
+// console.log('turfIntersect:', turfIntersect);
+
 import cover from '@mapbox/tile-cover';
 import xhr from 'xhr';
 import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 import uniq from 'uniq';
-import * as d3 from 'd3'; // TODO selective - https://github.com/d3/d3
+import * as d3 from 'd3'; // TODO be selective - https://github.com/d3/d3
 // console.log('d3:', d3);
 
 // begin -------- how to use DatGuiDefaults
@@ -158,7 +165,9 @@ let data = (() => {
             // and push it into our variable
             let feature = tile.layers.contour.feature(i)
                 .toGeoJSON(zoompos[0], zoompos[1], zoompos[2]);
-            if (i === 0) bottomTiles.push(feature);
+            if (i === 0) {
+                bottomTiles.push(feature);
+            }
 
             // break multigons into multiple polygons
             if (feature.geometry.type === 'MultiPolygon') {
@@ -221,14 +230,18 @@ let data = (() => {
                 // console.log('feat collection:', turf.featureCollection(elevationPolys));
                 let mergedElevationPoly = turf.union.apply(
                     this, turf.featureCollection(elevationPolys).features);
+                // console.log('@@@', mergedElevationPoly, currentElevation);
 
                 // trim to desired search area
-                mergedElevationPoly = turf.intersect(
+                // mergedElevationPoly = turf.intersect( // turf.intersect of v5.1.6 is broken, not up-to-date
+                mergedElevationPoly = turfIntersect( // use module version instead
                     polygon, mergedElevationPoly);
+                // console.log('@@@', polygon);
 
+                // console.log('@@@mergedElevationPoly:', mergedElevationPoly);
                 if (mergedElevationPoly) {
+                    // console.log('@@@merge success', currentElevation);
                     let contourArea = turf.area(mergedElevationPoly.geometry);
-                    // FIXME: ???????? ???????? ???????? ????????
                     // L.mapbox.featureLayer().setGeoJSON(mergedElevationPoly).addTo(map);
 
                     contours.push({
