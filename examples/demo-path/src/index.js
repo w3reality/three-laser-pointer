@@ -365,7 +365,7 @@ let data = (() => {
             let [lines, extrudeShade] = buildSliceGeometry(
                 coords, iContour, colorRange(iContour),
                 contours, northWest, southEast, radius);
-            lines.forEach((line) => { objs.push(line); });
+            // lines.forEach((line) => { objs.push(line); });
             objs.push(extrudeShade);
         };
 
@@ -467,8 +467,8 @@ let data = (() => {
             const token = `${env.token}`;
             console.log('token:', token);
 
-            tilesCovered = [[3072, 6420, 14],]; // debug, to one elem, overriding!!!!!!!!!!!!!!!!!!!!!
-            // tilesCovered = [[3073, 6420, 14],]; // debug, to one elem, overriding!!!!!!!!!!!!!!!!!!!!!
+            // tilesCovered = [[3072, 6420, 14],]; // debug, to one elem, overriding!!!!!!!!!!!!!!!!!!!!!
+            tilesCovered.length = 10;
 
             tilesCovered.forEach((zoompos, index) => {
                 console.log('DOWNLOADING TILE');
@@ -479,6 +479,7 @@ let data = (() => {
                         uri: uri,
                         responseType: 'blob',
                     }, (error, response, blob) => {
+                        queryCount++;
                         console.log('blob:', blob);
                         // https://stackoverflow.com/questions/15341912/how-to-go-from-blob-to-arraybuffer
                         let fr = new FileReader();
@@ -492,15 +493,16 @@ let data = (() => {
                             console.log('bottomTiles:', bottomTiles);
 
                             // assume only tile to dl !!!!!!!!!!!!!!!!!
-                            let eleList = getEleList(geojson);
-                            console.log('eleList:', eleList);
-                            addBottomEle(geojson, bottomTiles, eleList);
-                            console.log('geojson:', geojson);
+                            if (queryCount === tilesCovered.length) {
+                                let eleList = getEleList(geojson);
+                                console.log('eleList:', eleList);
+                                addBottomEle(geojson, bottomTiles, eleList);
+                                console.log('geojson:', geojson);
 
-                            let contours = getContours(eleList, geojson, polygon);
-                            console.log('contours:', contours);
-
-                            cb(contours);
+                                let contours = getContours(eleList, geojson, polygon);
+                                console.log('contours:', contours);
+                                cb(contours);
+                            }
                         };
                         fr.readAsArrayBuffer(blob);
                     });
@@ -571,18 +573,25 @@ let data = (() => {
     });
     scene.add(laser);
 
-    // register all meshes
+    // register meshes to interact with
     const meshes = [];
 
     // getModel((mesh) => {  // async
     //     scene.add(mesh);
     getTiles((objs) => {  // async
-        objs.forEach((obj) => { scene.add(obj); });
         scene.traverse((node) => {
             // console.log('node.type:', node.type, node.name);
             if (node instanceof THREE.Mesh) {
-                meshes.push(node);
+                // meshes.push(node);
             }
+        });
+
+        objs.forEach((obj, index) => {
+            if (index === 0) {
+                // only interact with the first tile cos raycast is heavy...
+                // meshes.push(obj);
+            }
+            scene.add(obj);
         });
     });
 
