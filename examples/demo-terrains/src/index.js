@@ -1,6 +1,11 @@
 import DatGuiDefaults from 'dat-gui-defaults';
-import * as THREE from 'three';
 import Stats from 'stats.js';
+
+// import * as THREE from 'three';
+//--------
+// for three.terrain.js, load threejs via script tag in index.html
+import 'three.terrain.js';
+// console.log(THREE.Terrain);
 
 import OrbitControls from 'three-es6-plugin/es6/OrbitControls';
 import OBJLoader from 'three-es6-plugin/es6/OBJLoader';
@@ -86,6 +91,43 @@ const appData = (() => {
     const _render = () => {
         renderer.render(scene, camera);
     };
+
+    //======== add terrain
+    const xS = 63, yS = 63;
+    const terrainScene = THREE.Terrain({
+        easing: THREE.Terrain.Linear,
+        frequency: 2.5,
+        // frequency: 0.25,
+        heightmap: THREE.Terrain.DiamondSquare,
+        material: new THREE.MeshBasicMaterial({color: 0x5566aa}),
+        // maxHeight: 100,
+        // minHeight: -100,
+        maxHeight: 0.1,
+        minHeight: -0.1,
+        steps: 1,
+        useBufferGeometry: false,
+        xSegments: xS,
+        // xSize: 1024,
+        xSize: 1,
+        ySegments: yS,
+        // ySize: 1024,
+        ySize: 1,
+    });
+    scene.add(terrainScene);
+
+    // Optional:
+    // Get the geometry of the terrain across which you want to scatter meshes
+    const geoTerrain = terrainScene.children[0].geometry;
+    // Add randomly distributed foliage
+    const decoScene = THREE.Terrain.ScatterMeshes(geoTerrain, {
+        // mesh: new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 12, 6)),
+        mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.06, 0.03)),
+        w: xS,
+        h: yS,
+        spread: 0.02,
+        randomness: Math.random,
+    });
+    terrainScene.add(decoScene);
 
     // for registering meshes to interact with
     const meshesInteraction = [];
