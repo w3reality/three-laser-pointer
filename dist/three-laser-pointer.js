@@ -133,23 +133,6 @@ var Line = function (_THREE$Line) {
             // this.frustumCulled = false;
         }
     }, {
-        key: '_getPointsRandomWalk',
-        value: function _getPointsRandomWalk(numPoints) {
-            var positions = [];
-            var x = 0;
-            var y = 0;
-            var z = 0;
-            for (var i = 0; i < numPoints; i++) {
-                positions.push(x);
-                positions.push(y);
-                positions.push(z);
-                x += (Math.random() - 0.5) * 2;
-                y += (Math.random() - 0.5) * 2;
-                z += (Math.random() - 0.5) * 2;
-            }
-            return positions;
-        }
-    }, {
         key: 'getPoints',
         value: function getPoints() {
             var arr = this.geometry.attributes.position.array;
@@ -187,7 +170,24 @@ var Line = function (_THREE$Line) {
     }, {
         key: 'updatePointsRandomWalk',
         value: function updatePointsRandomWalk(numPoints) {
-            this.updatePoints(this._getPointsRandomWalk(numPoints));
+            this.updatePoints(Line._getPointsRandomWalk(numPoints));
+        }
+    }], [{
+        key: '_getPointsRandomWalk',
+        value: function _getPointsRandomWalk(numPoints) {
+            var positions = [];
+            var x = 0;
+            var y = 0;
+            var z = 0;
+            for (var i = 0; i < numPoints; i++) {
+                positions.push(x);
+                positions.push(y);
+                positions.push(z);
+                x += (Math.random() - 0.5) * 2;
+                y += (Math.random() - 0.5) * 2;
+                z += (Math.random() - 0.5) * 2;
+            }
+            return positions;
         }
     }]);
 
@@ -230,17 +230,6 @@ var Laser = function (_Line) {
         key: 'getSource',
         value: function getSource() {
             return this._src.clone();
-        }
-    }, {
-        key: 'direct',
-        value: function direct(src, target) {
-            return target.clone().sub(src).normalize();
-        }
-    }, {
-        key: 'reflect',
-        value: function reflect(d, n) {
-            // r = d - 2 * (d.n) n;  https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
-            return d.clone().sub(n.clone().multiplyScalar(2 * d.dot(n)));
         }
     }, {
         key: '_raycast',
@@ -298,25 +287,57 @@ var Laser = function (_Line) {
             if (maxReflect < 1) return;
 
             var src = this.getSource();
-            var dir = this.direct(src, pt);
+            var dir = Laser.direct(src, pt);
             var isect = this.raycast(src, dir, meshes);
             if (!isect) return;
 
             var arrRefs = this.computeReflections(pt, dir, isect, meshes, maxReflect);
             this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z].concat(_toConsumableArray(arrRefs)));
         }
+
+        // DEPRECATED: this recursive version has stack depth limitation
+
     }, {
-        key: 'computeReflections',
-        value: function computeReflections(src, dir, isect, meshes, maxReflect) {
-            var self = this;
+        key: '_computeReflectionsRecursive',
+        value: function _computeReflectionsRecursive(src, dir, isect, meshes, maxReflect) {
             var arr = [];
 
+            // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
+            // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
+            var self = this;
+            (function me(src, dir, isect) {
+                // https://stackoverflow.com/questions/39082673/get-face-global-normal-in-three-js
+                // console.log('local normal:', isect.face.normal);
+                var normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
+                var normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+
+                var ref = Laser.reflect(dir, normalWorld);
+                var isectNew = self.raycast(src, ref, meshes, isect.face);
+                // console.log('isectNew:', isectNew);
+
+                if (isectNew) {
+                    var pt = isectNew.point;
+                    arr.push(pt.x, pt.y, pt.z);
+                    if (arr.length / 3 < maxReflect) {
+                        me(pt, ref, isectNew);
+                    }
+                } else {
+                    var inf = src.clone().add(ref.multiplyScalar(self._infLen));
+                    arr.push(inf.x, inf.y, inf.z);
+                }
+            })(src, dir, isect);
+            return arr;
+        }
+    }, {
+        key: '_computeReflections',
+        value: function _computeReflections(src, dir, isect, meshes, maxReflect) {
+            var arr = [];
             while (1) {
                 var normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
                 var normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
 
-                var ref = self.reflect(dir, normalWorld);
-                var isectNew = self.raycast(src, ref, meshes, isect.face);
+                var ref = Laser.reflect(dir, normalWorld);
+                var isectNew = this.raycast(src, ref, meshes, isect.face);
                 if (isectNew) {
                     var pt = isectNew.point;
                     arr.push(pt.x, pt.y, pt.z);
@@ -328,39 +349,29 @@ var Laser = function (_Line) {
                     }
                     break;
                 } else {
-                    var inf = src.clone().add(ref.multiplyScalar(self._infLen));
+                    var inf = src.clone().add(ref.multiplyScalar(this._infLen));
                     arr.push(inf.x, inf.y, inf.z);
                     break;
                 }
             }
             return arr;
-
-            // DEPRECATED: this recursive version has stack depth limitation
-            //--------
-            // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
-            // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
-            // (function me (src, dir, isect) {
-            //     // https://stackoverflow.com/questions/39082673/get-face-global-normal-in-three-js
-            //     // console.log('local normal:', isect.face.normal);
-            //     let normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
-            //     let normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
-            //
-            //     let ref = self.reflect(dir, normalWorld);
-            //     let isectNew = self.raycast(src, ref, meshes, isect.face);
-            //     // console.log('isectNew:', isectNew);
-            //
-            //     if (isectNew) {
-            //         let pt = isectNew.point;
-            //         arr.push(pt.x, pt.y, pt.z);
-            //         if (arr.length / 3 < maxReflect) {
-            //             me(pt, ref, isectNew);
-            //         }
-            //     } else {
-            //         let inf = src.clone().add(ref.multiplyScalar(self._infLen));
-            //         arr.push(inf.x, inf.y, inf.z);
-            //     }
-            // })(src, dir, isect);
-            // return arr;
+        }
+    }, {
+        key: 'computeReflections',
+        value: function computeReflections(src, dir, isect, meshes, maxReflect) {
+            // return this._computeReflectionsRecursive(src, dir, isect, meshes, maxReflect);
+            return this._computeReflections(src, dir, isect, meshes, maxReflect);
+        }
+    }], [{
+        key: 'direct',
+        value: function direct(src, target) {
+            return target.clone().sub(src).normalize();
+        }
+    }, {
+        key: 'reflect',
+        value: function reflect(d, n) {
+            // r = d - 2 * (d.n) n;  https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
+            return d.clone().sub(n.clone().multiplyScalar(2 * d.dot(n)));
         }
     }]);
 

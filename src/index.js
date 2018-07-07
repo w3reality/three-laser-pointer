@@ -22,7 +22,7 @@ class Line extends THREE.Line {
         // this.frustumCulled = false;
     }
 
-    _getPointsRandomWalk(numPoints) {
+    static _getPointsRandomWalk(numPoints) {
         let positions = [];
         let x = 0;
         let y = 0;
@@ -67,7 +67,7 @@ class Line extends THREE.Line {
         this.updatePoints([]);
     }
     updatePointsRandomWalk(numPoints) {
-        this.updatePoints(this._getPointsRandomWalk(numPoints));
+        this.updatePoints(Line._getPointsRandomWalk(numPoints));
     };
 }
 
@@ -93,10 +93,10 @@ class Laser extends Line {
     getSource() {
         return this._src.clone();
     }
-    direct(src, target) {
+    static direct(src, target) {
         return target.clone().sub(src).normalize();
     }
-    reflect(d, n) {
+    static reflect(d, n) {
         // r = d - 2 * (d.n) n;  https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
         return d.clone().sub(n.clone().multiplyScalar(2*d.dot(n)));
     }
@@ -139,7 +139,7 @@ class Laser extends Line {
         if (maxReflect < 1) return;
 
         let src = this.getSource();
-        let dir = this.direct(src, pt);
+        let dir = Laser.direct(src, pt);
         let isect = this.raycast(src, dir, meshes);
         if (!isect) return;
 
@@ -147,16 +147,46 @@ class Laser extends Line {
             pt, dir, isect, meshes, maxReflect);
         this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, ...arrRefs]);
     }
-    computeReflections(src, dir, isect, meshes, maxReflect) {
-        const self = this;
+
+    // DEPRECATED: this recursive version has stack depth limitation
+    _computeReflectionsRecursive(src, dir, isect, meshes, maxReflect) {
         const arr = [];
 
+        // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
+        // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
+        const self = this;
+        (function me (src, dir, isect) {
+            // https://stackoverflow.com/questions/39082673/get-face-global-normal-in-three-js
+            // console.log('local normal:', isect.face.normal);
+            let normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
+            let normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+
+            let ref = Laser.reflect(dir, normalWorld);
+            let isectNew = self.raycast(src, ref, meshes, isect.face);
+            // console.log('isectNew:', isectNew);
+
+            if (isectNew) {
+                let pt = isectNew.point;
+                arr.push(pt.x, pt.y, pt.z);
+                if (arr.length / 3 < maxReflect) {
+                    me(pt, ref, isectNew);
+                }
+            } else {
+                let inf = src.clone().add(ref.multiplyScalar(self._infLen));
+                arr.push(inf.x, inf.y, inf.z);
+            }
+        })(src, dir, isect);
+        return arr;
+    }
+
+    _computeReflections(src, dir, isect, meshes, maxReflect) {
+        const arr = [];
         while (1) {
             let normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
             let normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
 
-            let ref = self.reflect(dir, normalWorld);
-            let isectNew = self.raycast(src, ref, meshes, isect.face);
+            let ref = Laser.reflect(dir, normalWorld);
+            let isectNew = this.raycast(src, ref, meshes, isect.face);
             if (isectNew) {
                 let pt = isectNew.point;
                 arr.push(pt.x, pt.y, pt.z);
@@ -168,39 +198,16 @@ class Laser extends Line {
                 }
                 break;
             } else {
-                let inf = src.clone().add(ref.multiplyScalar(self._infLen));
+                let inf = src.clone().add(ref.multiplyScalar(this._infLen));
                 arr.push(inf.x, inf.y, inf.z);
                 break;
             }
         }
         return arr;
-
-        // DEPRECATED: this recursive version has stack depth limitation
-        //--------
-        // https://stackoverflow.com/questions/7065120/calling-a-javascript-function-recursively
-        // https://stackoverflow.com/questions/41681357/can-a-normal-or-arrow-function-invoke-itself-from-its-body-in-a-recursive-manner
-        // (function me (src, dir, isect) {
-        //     // https://stackoverflow.com/questions/39082673/get-face-global-normal-in-three-js
-        //     // console.log('local normal:', isect.face.normal);
-        //     let normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
-        //     let normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
-        //
-        //     let ref = self.reflect(dir, normalWorld);
-        //     let isectNew = self.raycast(src, ref, meshes, isect.face);
-        //     // console.log('isectNew:', isectNew);
-        //
-        //     if (isectNew) {
-        //         let pt = isectNew.point;
-        //         arr.push(pt.x, pt.y, pt.z);
-        //         if (arr.length / 3 < maxReflect) {
-        //             me(pt, ref, isectNew);
-        //         }
-        //     } else {
-        //         let inf = src.clone().add(ref.multiplyScalar(self._infLen));
-        //         arr.push(inf.x, inf.y, inf.z);
-        //     }
-        // })(src, dir, isect);
-        // return arr;
+    }
+    computeReflections(src, dir, isect, meshes, maxReflect) {
+        // return this._computeReflectionsRecursive(src, dir, isect, meshes, maxReflect);
+        return this._computeReflections(src, dir, isect, meshes, maxReflect);
     }
 }
 
