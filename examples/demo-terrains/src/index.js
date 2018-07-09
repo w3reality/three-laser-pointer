@@ -16,7 +16,8 @@ console.log('LaserPointer:', LaserPointer);
 
 const canvas = document.getElementById("canvas");
 const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.001, 10000);
-camera.position.set(-0.1, 0.15, 0.5);
+// camera.position.set(-0.1, 0.15, 0.5);
+camera.position.set(0, 0, 0.5);
 // camera.up = new THREE.Vector3(0, 0, 1); // important for OrbitControls
 camera.up = new THREE.Vector3(0, 1, 0); // important for OrbitControls
 
@@ -90,7 +91,6 @@ const appData = (() => {
     });
     scene.add(_laser);
 
-
     //======== add terrain
     const thelper = new TerrainHelper({
         xSize: 1.0,
@@ -154,7 +154,7 @@ const appData = (() => {
 
                 if (1) {
                     // _laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), cam);
-                    _laser.setSource(new THREE.Vector3(0.3, -0.4, 2.5), cam);
+                    _laser.setSource(new THREE.Vector3(0.003, -0.004, 0.002), cam);
                 } else {
                     _laser.setSource(new THREE.Vector3(0, 0, 0));
                 }

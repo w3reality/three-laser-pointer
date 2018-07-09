@@ -1,5 +1,5 @@
 // if THREE is global (via script tag loading), use that THREE to prevent
-// conflicts with ES6 version...
+// conflicts with ES6 version. (Line objects become broken, otherwise...)
 import * as THREE_ES6 from 'three';
 console.log('window.THREE:', window.THREE);
 const THREE = window.THREE ? window.THREE : THREE_ES6;
