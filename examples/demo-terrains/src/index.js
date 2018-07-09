@@ -2,10 +2,8 @@ import DatGuiDefaults from 'dat-gui-defaults';
 import Stats from 'stats.js';
 
 // import * as THREE from 'three';
-//--------
 // for three.terrain.js, load threejs via script tag in index.html
-import 'three.terrain.js';
-// console.log(THREE.Terrain);
+import TerrainHelper from './terrain-helper.js';
 
 import OrbitControls from 'three-es6-plugin/es6/OrbitControls';
 import OBJLoader from 'three-es6-plugin/es6/OBJLoader';
@@ -19,7 +17,8 @@ console.log('LaserPointer:', LaserPointer);
 const canvas = document.getElementById("canvas");
 const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.001, 10000);
 camera.position.set(0, 0, 0.5);
-camera.up = new THREE.Vector3(0, 0, 1); // important for OrbitControls
+// camera.up = new THREE.Vector3(0, 0, 1); // important for OrbitControls
+camera.up = new THREE.Vector3(0, 1, 0); // important for OrbitControls
 
 const renderer = new THREE.WebGLRenderer({
     // alpha: true,
@@ -93,137 +92,39 @@ const appData = (() => {
     };
 
     //======== add terrain simple
-    const getTerrainScene = (xS, yS, mat) => {
-        return THREE.Terrain({
-            easing: THREE.Terrain.Linear,
-            frequency: 2.5, //???
-            heightmap: THREE.Terrain.DiamondSquare,
-            // material: new THREE.MeshBasicMaterial({color: 0x5566aa}),
-            // material: new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true}), // wireframe
-            // material: new THREE.MeshPhongMaterial({color: 0x88aaaa, specular: 0x444455, shininess: 10}), // gray
-            material: mat,
-            // maxHeight: 100,
-            // minHeight: -100,
-            maxHeight: 0.1,
-            minHeight: -0.1,
-            steps: 1,
-            useBufferGeometry: false,
-            xSegments: xS,
-            ySegments: yS,
-            // xSize: 1024,
-            // ySize: 1024,
-            xSize: 1,
-            ySize: 1,
-        });
-    };
-    const getBlendedMaterial = (mag=0.01, cb=null) => {
-        const loader = new THREE.TextureLoader();
-        loader.load('./sand1.jpg', function(t1) {
-            t1.wrapS = t1.wrapT = THREE.RepeatWrapping;
-            loader.load('./grass1.jpg', function(t2) {
-                loader.load('./stone1.jpg', function(t3) {
-                    loader.load('./snow1.jpg', function(t4) {
-                        // t2.repeat.x = t2.repeat.y = 2;
-                        let blend = THREE.Terrain.generateBlendedMaterial([
-                            {texture: t1},
-                            {texture: t2, levels: [-80*mag, -35*mag, 20*mag, 50*mag]},
-                            {texture: t3, levels: [20*mag, 50*mag, 60*mag, 85*mag]},
-                            {texture: t4, glsl: `1.0 - smoothstep(${65.0*mag} + smoothstep(-256.0, 256.0, vPosition.x) * ${10.0*mag}, ${80.0*mag}, vPosition.z)`},
-                            {texture: t3, glsl: `slope > 0.7853981633974483 ? 0.2 : 1.0 - smoothstep(0.47123889803846897, 0.7853981633974483, slope) + 0.2`}, // between 27 and 45 degrees
-                        ]);
-                        // console.log('blend:', blend);
-                        cb(blend);
-                    });
-                });
-            });
-        });
-    };
 
-    const buildTree = (mag=0.001) => {
-        var material = [
-            new THREE.MeshLambertMaterial({ color: 0x3d2817 }), // brown
-            new THREE.MeshLambertMaterial({ color: 0x2d4c1e }), // green
-        ];
-
-        var c0 = new THREE.Mesh(new THREE.CylinderGeometry(2*mag, 2*mag, 12*mag, 6*mag, 1*mag, true));
-        c0.position.y = 6*mag;
-        var c1 = new THREE.Mesh(new THREE.CylinderGeometry(0*mag, 10*mag, 14*mag, 8*mag));
-        c1.position.y = 18*mag;
-        var c2 = new THREE.Mesh(new THREE.CylinderGeometry(0*mag, 9*mag, 13*mag, 8*mag));
-        c2.position.y = 25*mag;
-        var c3 = new THREE.Mesh(new THREE.CylinderGeometry(0*mag, 8*mag, 12*mag, 8*mag));
-        c3.position.y = 32*mag;
-
-        var g = new THREE.Geometry();
-        c0.updateMatrix();
-        c1.updateMatrix();
-        c2.updateMatrix();
-        c3.updateMatrix();
-        g.merge(c0.geometry, c0.matrix);
-        g.merge(c1.geometry, c1.matrix);
-        g.merge(c2.geometry, c2.matrix);
-        g.merge(c3.geometry, c3.matrix);
-
-        var b = c0.geometry.faces.length;
-        for (var i = 0, l = g.faces.length; i < l; i++) {
-            g.faces[i].materialIndex = i < b ? 0 : 1;
-        }
-
-        var m = new THREE.Mesh(g, material);
-        m.scale.x = m.scale.z = 5;
-        m.scale.y = 1.25;
-        return m;
-    };
-
-    getBlendedMaterial(0.01, (blend) => {
-        const xS = 63, yS = 63;
-        const terrainScene = getTerrainScene(xS, yS, blend);
-        scene.add(terrainScene);
-
-        // Get the geometry of the terrain across which you want to scatter meshes
-        const geoTerrain = terrainScene.children[0].geometry;
-        // Add randomly distributed foliage
-        let decoScene = THREE.Terrain.ScatterMeshes(geoTerrain, {
-            // mesh: new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 12, 6)),
-            // mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.06, 0.03)),
-            mesh: buildTree(0.001),
-            w: xS,
-            h: yS,
-            spread: 0.02,
-            randomness: Math.random,
-        });
-        terrainScene.add(decoScene);
+    const thelper = new TerrainHelper({
+        xSize: 1.0,
+        ySize: 1.0,
+        maxHeight: 0.1,
+        minHeight: -0.1,
     });
 
-    // set up sky, water, light
-    if (1) {
-        new THREE.TextureLoader().load('./sky1.jpg', function (t1) {
-            t1.minFilter = THREE.LinearFilter; // Texture is not a power-of-two size; use smoother interpolation.
-            const skyDome = new THREE.Mesh(
-                new THREE.SphereGeometry(8192, 16, 16, 0, Math.PI*2, 0, Math.PI*0.5),
-                new THREE.MeshBasicMaterial({map: t1, side: THREE.BackSide, fog: false})
-            );
-            // skyDome.position.y = -99;
-            skyDome.position.y = -0.99;
-            scene.add(skyDome);
+    TerrainHelper.getBlendedMaterial((blend) => {
+        // TerrainHelper.loadHeightmapImage('./heightmap.png', (img) => {
+        TerrainHelper.loadHeightmapImage('./heightmapMods.png', (img) => {
+            // const terrainScene = thelper.getTerrainScene(blend); // use auto-generated heightmap
+            const terrainScene = thelper.getTerrainScene(blend, img);
+            console.log('terrainScene:', terrainScene);
+            const terrain = terrainScene.children[0];
+            // terrain.rotation.x = 0.5 * Math.PI; // in case up-vector is (0,0,1)
+            scene.add(terrainScene);
+
+            // Add randomly distributed foliage across the terrain geometry
+            terrainScene.add(thelper.getScatterMeshesScene(terrain.geometry));
+
+            _render(); // first time
         });
+    });
 
-        const water = new THREE.Mesh(
-            new THREE.PlaneBufferGeometry(16384+1024, 16384+1024, 16, 16),
-            new THREE.MeshLambertMaterial({color: 0x006ba0, transparent: true, opacity: 0.6})
-        );
-        // water.position.y = -99;
-        water.position.y = -0.99;
-        water.rotation.x = -0.5 * Math.PI;
-        scene.add(water);
+    // set up other world components
+    TerrainHelper.getSkyDome((skyDome) => {
+        scene.add(skyDome);
+    });
+    scene.add(TerrainHelper.getWater());
+    scene.add(TerrainHelper.getSunLight());
+    scene.add(TerrainHelper.getSkyLight());
 
-        const skyLight = new THREE.DirectionalLight(0xe8bdb0, 1.5);
-        skyLight.position.set(2950, 2625, -160); // Sun on the sky texture
-        scene.add(skyLight);
-        const light = new THREE.DirectionalLight(0xc3eaff, 0.75);
-        light.position.set(-1, -0.5, -1);
-        scene.add(light);
-    }
 
     // for registering meshes to interact with
     const meshesInteraction = [];
