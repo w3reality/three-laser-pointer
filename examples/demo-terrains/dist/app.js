@@ -99814,7 +99814,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                     throw new TypeError("Super expression must either be null or a function, not " + (typeof superClass === 'undefined' ? 'undefined' : _typeof(superClass)));
                 }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
             } // if THREE is global (via script tag loading), use that THREE to prevent
-            // conflicts with ES6 version...
+            // conflicts with ES6 version. (Line objects become broken, otherwise...)
 
 
             console.log('window.THREE:', window.THREE);
