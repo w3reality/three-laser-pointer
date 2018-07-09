@@ -16,7 +16,7 @@ console.log('LaserPointer:', LaserPointer);
 
 const canvas = document.getElementById("canvas");
 const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.001, 10000);
-camera.position.set(0, 0, 0.5);
+camera.position.set(-0.1, 0.15, 0.5);
 // camera.up = new THREE.Vector3(0, 0, 1); // important for OrbitControls
 camera.up = new THREE.Vector3(0, 1, 0); // important for OrbitControls
 
@@ -78,9 +78,12 @@ const appData = (() => {
     //======== add laser
     if (0) {
         const line = new LaserPointer.Line(32, 0x00ffff);
-        line.updatePointsRandomWalk(32);
-        scene.add(line);
+        // line.updatePointsRandomWalk(32);
+        // scene.add(line);
     }
+
+    //?????????????????????? why laser gone without this????????
+    const line99 = new LaserPointer.Line(0, 0x00ffff);// FIXME!!!!!!!!!????????????????????
 
     const laser = new LaserPointer.Laser({
         color: 0xffffff,
@@ -91,14 +94,16 @@ const appData = (() => {
         renderer.render(scene, camera);
     };
 
-    //======== add terrain simple
-
+    //======== add terrain
     const thelper = new TerrainHelper({
         xSize: 1.0,
         ySize: 1.0,
         maxHeight: 0.1,
         minHeight: -0.1,
     });
+
+    // for registering meshes to interact with
+    let meshesInteraction = [];
 
     TerrainHelper.getBlendedMaterial((blend) => {
         // TerrainHelper.loadHeightmapImage('./heightmap.png', (img) => {
@@ -107,28 +112,38 @@ const appData = (() => {
             const terrainScene = thelper.getTerrainScene(blend, img);
             console.log('terrainScene:', terrainScene);
             const terrain = terrainScene.children[0];
+            terrain.name = "terrain";
             // terrain.rotation.x = 0.5 * Math.PI; // in case up-vector is (0,0,1)
-            scene.add(terrainScene);
+            meshesInteraction.push(terrain);
 
             // Add randomly distributed foliage across the terrain geometry
-            terrainScene.add(thelper.getScatterMeshesScene(terrain.geometry));
+            const scattered = thelper.getScatterMeshesScene(terrain.geometry, false);
+            const scatterScene = scattered.scene;
+            // _scatteredMat = scattered.material;
+            console.log('scatterScene:', scatterScene);
+            terrainScene.add(scatterScene);
 
-            _render(); // first time
+            // scatterScene.children[10].material = new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true});
+            meshesInteraction = meshesInteraction.concat(scatterScene.children);
+            console.log('meshesInteraction:', meshesInteraction);
+
+            scene.add(terrainScene);
+            _render();
         });
     });
 
     // set up other world components
     TerrainHelper.getSkyDome((skyDome) => {
         scene.add(skyDome);
+        _render();
     });
     scene.add(TerrainHelper.getWater());
     scene.add(TerrainHelper.getSunLight());
     scene.add(TerrainHelper.getSkyLight());
 
+    const _wireframeMat = new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true});
 
-    // for registering meshes to interact with
-    const meshesInteraction = [];
-
+    console.log('scene:', scene);
     return {
         scene: scene,
         render: _render,
@@ -150,6 +165,13 @@ const appData = (() => {
                 let color = guiData.color.replace("#", "0x");
                 if (1) {
                     laser.pointWithRaytrace(pt, meshesInteraction, color, 16);
+                    let meshesHit = laser.getMeshesHit();
+                    // console.log('meshesHit:', meshesHit);
+                    meshesHit.forEach((mesh) => {
+                        if (mesh.name !== 'terrain') {
+                            mesh.material = _wireframeMat;
+                        }
+                    });
                 } else {
                     laser.point(pt, color);
                 }
@@ -159,6 +181,11 @@ const appData = (() => {
             }
             // = 1(src point) + #(reflection points) + 1(end point)
             // console.log('#points:', laser.getPoints().length);
+
+            let refPoints = laser.getPoints();
+            refPoints.shift();
+            refPoints.pop();
+            console.log('refPoints:', refPoints);
         },
         clearPick: () => {
             laser.clearPoints();
@@ -166,42 +193,20 @@ const appData = (() => {
     };
 })(); // end of appData init
 
-const updateVis = (vis) => {
+const onChangeVis = (value) => {
+    console.log('vis:', value);
     appData.scene.traverse((node) => {
-        if (!(node instanceof THREE.Mesh) &&
-            !(node instanceof THREE.Line)) return;
+        if (!node instanceof THREE.Mesh) return;
 
         // console.log(node.name);
         if (!node.name) return;
 
-        if (node.name.startsWith('dem-rgb-')) {
-            // console.log(`updating vis of ${node.name}`);
-            if (vis === "Satellite" && node.name in appData.satelliteMats) {
-                node.material = appData.satelliteMats[node.name];
-                node.material.needsUpdate = true;
-                node.visible = true;
-            } else if (vis === "Wireframe") {
-                node.material = appData.wireframeMat;
-                node.material.needsUpdate = true;
-                node.visible = true;
-            } else if (vis === "Contours") {
-                node.visible = false;
-            }
-        } else if (node.name.startsWith('dem-vec-')) {
-            node.visible = vis === "Contours";
+        if (node.name === "terrain") {
+            node.material.wireframe = value === 'Wireframe';
+            node.material.needsUpdate = true;
         }
     });
     appData.render();
-};
-const onChangeVis = (value) => {
-    console.log('vis:', value);
-    if (value === 'Contours') {
-        appData.loadVectorDem(() => {
-            updateVis(value);
-        });
-    } else {
-        updateVis(value);
-    }
 };
 
 // begin render stuff
@@ -240,7 +245,7 @@ class Gui extends DatGuiDefaults {
     initGui(gui, data, params) {
         let controller;
         controller = gui.add(params, 'vis',
-            ["Satellite", "Wireframe", "Contours"]).name('Visualization');
+            ["Textured", "Wireframe"]).name('Terrain');
         controller.onChange((value) => {
             onChangeVis(value);
             data.vis = value;
@@ -260,7 +265,7 @@ class Gui extends DatGuiDefaults {
         });
         controller = gui.add(params, 'reset').name("Restore Defaults");
         controller.onChange((value) => {
-            thiz.applyDefaults();
+            this.applyDefaults();
             onChangeVis(params.vis);
             onChangeEvRender(params.evRender);
 
@@ -270,9 +275,9 @@ class Gui extends DatGuiDefaults {
 }
 
 const guiData = { // defaults
-    vis: "Satellite",
-    laser: false,
-    color: "0xff0000",
+    vis: "Textured",
+    laser: true,
+    color: "0x00ffff",
     evRender: true,
 };
 const dg = new Gui(guiData);
@@ -283,7 +288,7 @@ dg.setDefaults({
     evRender: guiData.evRender,
     reset: () => {},
 });
-dg.gui.close();
+// dg.gui.close();
 
 renderer.domElement.addEventListener('mousemove', (e) => {
     if (guiData.laser) {

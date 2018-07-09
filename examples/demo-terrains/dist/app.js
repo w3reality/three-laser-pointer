@@ -124,7 +124,7 @@ console.log('LaserPointer:', _threeLaserPointer2.default);
 
 var canvas = document.getElementById("canvas");
 var camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.001, 10000);
-camera.position.set(0, 0, 0.5);
+camera.position.set(-0.1, 0.15, 0.5);
 // camera.up = new THREE.Vector3(0, 0, 1); // important for OrbitControls
 camera.up = new THREE.Vector3(0, 1, 0); // important for OrbitControls
 
@@ -186,9 +186,12 @@ var appData = function () {
     //======== add laser
     if (0) {
         var line = new _threeLaserPointer2.default.Line(32, 0x00ffff);
-        line.updatePointsRandomWalk(32);
-        scene.add(line);
+        // line.updatePointsRandomWalk(32);
+        // scene.add(line);
     }
+
+    //?????????????????????? why laser gone without this????????
+    var line99 = new _threeLaserPointer2.default.Line(0, 0x00ffff); // FIXME!!!!!!!!!????????????????????
 
     var laser = new _threeLaserPointer2.default.Laser({
         color: 0xffffff
@@ -199,14 +202,16 @@ var appData = function () {
         renderer.render(scene, camera);
     };
 
-    //======== add terrain simple
-
+    //======== add terrain
     var thelper = new _terrainHelper2.default({
         xSize: 1.0,
         ySize: 1.0,
         maxHeight: 0.1,
         minHeight: -0.1
     });
+
+    // for registering meshes to interact with
+    var meshesInteraction = [];
 
     _terrainHelper2.default.getBlendedMaterial(function (blend) {
         // TerrainHelper.loadHeightmapImage('./heightmap.png', (img) => {
@@ -215,27 +220,38 @@ var appData = function () {
             var terrainScene = thelper.getTerrainScene(blend, img);
             console.log('terrainScene:', terrainScene);
             var terrain = terrainScene.children[0];
+            terrain.name = "terrain";
             // terrain.rotation.x = 0.5 * Math.PI; // in case up-vector is (0,0,1)
-            scene.add(terrainScene);
+            meshesInteraction.push(terrain);
 
             // Add randomly distributed foliage across the terrain geometry
-            terrainScene.add(thelper.getScatterMeshesScene(terrain.geometry));
+            var scattered = thelper.getScatterMeshesScene(terrain.geometry, false);
+            var scatterScene = scattered.scene;
+            // _scatteredMat = scattered.material;
+            console.log('scatterScene:', scatterScene);
+            terrainScene.add(scatterScene);
 
-            _render(); // first time
+            // scatterScene.children[10].material = new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true});
+            meshesInteraction = meshesInteraction.concat(scatterScene.children);
+            console.log('meshesInteraction:', meshesInteraction);
+
+            scene.add(terrainScene);
+            _render();
         });
     });
 
     // set up other world components
     _terrainHelper2.default.getSkyDome(function (skyDome) {
         scene.add(skyDome);
+        _render();
     });
     scene.add(_terrainHelper2.default.getWater());
     scene.add(_terrainHelper2.default.getSunLight());
     scene.add(_terrainHelper2.default.getSkyLight());
 
-    // for registering meshes to interact with
-    var meshesInteraction = [];
+    var _wireframeMat = new THREE.MeshBasicMaterial({ color: 0x5566aa, wireframe: true });
 
+    console.log('scene:', scene);
     return {
         scene: scene,
         render: _render,
@@ -256,6 +272,13 @@ var appData = function () {
                 var color = guiData.color.replace("#", "0x");
                 if (1) {
                     laser.pointWithRaytrace(pt, meshesInteraction, color, 16);
+                    var meshesHit = laser.getMeshesHit();
+                    // console.log('meshesHit:', meshesHit);
+                    meshesHit.forEach(function (mesh) {
+                        if (mesh.name !== 'terrain') {
+                            mesh.material = _wireframeMat;
+                        }
+                    });
                 } else {
                     laser.point(pt, color);
                 }
@@ -265,6 +288,11 @@ var appData = function () {
             }
             // = 1(src point) + #(reflection points) + 1(end point)
             // console.log('#points:', laser.getPoints().length);
+
+            var refPoints = laser.getPoints();
+            refPoints.shift();
+            refPoints.pop();
+            console.log('refPoints:', refPoints);
         },
         clearPick: function clearPick() {
             laser.clearPoints();
@@ -272,41 +300,20 @@ var appData = function () {
     };
 }(); // end of appData init
 
-var updateVis = function updateVis(vis) {
+var onChangeVis = function onChangeVis(value) {
+    console.log('vis:', value);
     appData.scene.traverse(function (node) {
-        if (!(node instanceof THREE.Mesh) && !(node instanceof THREE.Line)) return;
+        if (!node instanceof THREE.Mesh) return;
 
         // console.log(node.name);
         if (!node.name) return;
 
-        if (node.name.startsWith('dem-rgb-')) {
-            // console.log(`updating vis of ${node.name}`);
-            if (vis === "Satellite" && node.name in appData.satelliteMats) {
-                node.material = appData.satelliteMats[node.name];
-                node.material.needsUpdate = true;
-                node.visible = true;
-            } else if (vis === "Wireframe") {
-                node.material = appData.wireframeMat;
-                node.material.needsUpdate = true;
-                node.visible = true;
-            } else if (vis === "Contours") {
-                node.visible = false;
-            }
-        } else if (node.name.startsWith('dem-vec-')) {
-            node.visible = vis === "Contours";
+        if (node.name === "terrain") {
+            node.material.wireframe = value === 'Wireframe';
+            node.material.needsUpdate = true;
         }
     });
     appData.render();
-};
-var onChangeVis = function onChangeVis(value) {
-    console.log('vis:', value);
-    if (value === 'Contours') {
-        appData.loadVectorDem(function () {
-            updateVis(value);
-        });
-    } else {
-        updateVis(value);
-    }
 };
 
 // begin render stuff
@@ -354,8 +361,10 @@ var Gui = function (_DatGuiDefaults) {
 
         // override
         value: function initGui(gui, data, params) {
+            var _this2 = this;
+
             var controller = void 0;
-            controller = gui.add(params, 'vis', ["Satellite", "Wireframe", "Contours"]).name('Visualization');
+            controller = gui.add(params, 'vis', ["Textured", "Wireframe"]).name('Terrain');
             controller.onChange(function (value) {
                 onChangeVis(value);
                 data.vis = value;
@@ -376,7 +385,7 @@ var Gui = function (_DatGuiDefaults) {
             });
             controller = gui.add(params, 'reset').name("Restore Defaults");
             controller.onChange(function (value) {
-                thiz.applyDefaults();
+                _this2.applyDefaults();
                 onChangeVis(params.vis);
                 onChangeEvRender(params.evRender);
 
@@ -389,9 +398,9 @@ var Gui = function (_DatGuiDefaults) {
 }(_datGuiDefaults2.default);
 
 var guiData = { // defaults
-    vis: "Satellite",
-    laser: false,
-    color: "0xff0000",
+    vis: "Textured",
+    laser: true,
+    color: "0x00ffff",
     evRender: true
 };
 var dg = new Gui(guiData);
@@ -402,7 +411,7 @@ dg.setDefaults({
     evRender: guiData.evRender,
     reset: function reset() {}
 });
-dg.gui.close();
+// dg.gui.close();
 
 renderer.domElement.addEventListener('mousemove', function (e) {
     if (guiData.laser) {
@@ -99924,6 +99933,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                     _this2._src = new THREE.Vector3(0, 0, 0);
                     _this2._raycaster = new THREE.Raycaster();
                     _this2._infLen = actual.infLength;
+                    _this2._meshes = [];
                     return _this2;
                 }
 
@@ -99975,12 +99985,18 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                         return this._raycast(meshes, recursive, null);
                     }
                 }, {
+                    key: 'getMeshesHit',
+                    value: function getMeshesHit() {
+                        return this._meshes;
+                    }
+                }, {
                     key: 'point',
                     value: function point(pt) {
                         var color = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
                         // console.log("point():", this._src, pt);
                         this.updatePoints([this._src.x, this._src.y, this._src.z, pt.x, pt.y, pt.z]);
+                        this._meshes.length = 0;
                         if (color) {
                             this.material.color.setHex(color);
                         }
@@ -100041,6 +100057,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                     key: '_computeReflections',
                     value: function _computeReflections(src, dir, isect, meshes, maxReflect) {
                         var arr = [];
+                        this._meshes = [isect.object]; // re-init
+
                         while (1) {
                             var normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
                             var normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
@@ -100050,6 +100068,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                             if (isectNew) {
                                 var pt = isectNew.point;
                                 arr.push(pt.x, pt.y, pt.z);
+                                this._meshes.push(isectNew.object);
                                 if (arr.length / 3 < maxReflect) {
                                     src = pt;
                                     dir = ref;
@@ -100155,9 +100174,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 // console.log(THREE.Terrain);
 
 var TerrainHelper = function () {
-    // constructor(xSize=1, ySize=1, xS=63, yS=63) {
     function TerrainHelper() {
-        var params = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
         _classCallCheck(this, TerrainHelper);
 
@@ -100169,8 +100187,7 @@ var TerrainHelper = function () {
             xS: 63,
             yS: 63
         };
-        var actual = {};
-        Object.assign(actual, defaults, params);
+        var actual = Object.assign({}, defaults, options);
         this.xSize = actual.xSize;
         this.ySize = actual.ySize;
         this.maxHeight = actual.maxHeight;
@@ -100205,18 +100222,30 @@ var TerrainHelper = function () {
     }, {
         key: 'getScatterMeshesScene',
         value: function getScatterMeshesScene(terrainGeom) {
-            var mag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0.001;
-            var spread = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0.02;
+            var merge = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+            var mag = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0.001;
+            var spread = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.02;
 
-            return THREE.Terrain.ScatterMeshes(terrainGeom, {
-                // mesh: new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 12, 6)),
-                // mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.06, 0.03)),
-                mesh: TerrainHelper.buildTree(mag),
-                w: this.xS,
-                h: this.yS,
-                spread: spread,
-                randomness: Math.random
-            });
+            // const _mesh = new THREE.Mesh(new THREE.CylinderGeometry(10*mag, 10*mag, 60*mag, 30*mag));
+            var _mesh = TerrainHelper.buildTree(mag);
+
+            if (!merge) {
+                // Kludge -
+                // Here we want to track indivisual scattered meshes.
+                // THREE.Terrain.ScatterMeshes() does not merge meshes when
+                // the geometry is THREE.Geometry.  So convert to THREE.BufferGeometry.
+                _mesh.geometry = new THREE.BufferGeometry().fromGeometry(_mesh.geometry);
+            }
+            return {
+                scene: THREE.Terrain.ScatterMeshes(terrainGeom, {
+                    mesh: _mesh,
+                    w: this.xS,
+                    h: this.yS,
+                    spread: spread,
+                    randomness: Math.random
+                }),
+                material: _mesh.material
+            };
         }
     }], [{
         key: 'loadHeightmapImage',

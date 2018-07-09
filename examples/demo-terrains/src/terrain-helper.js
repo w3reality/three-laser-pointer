@@ -4,8 +4,7 @@ import 'three.terrain.js';
 // console.log(THREE.Terrain);
 
 class TerrainHelper {
-    // constructor(xSize=1, ySize=1, xS=63, yS=63) {
-    constructor(params={}) {
+    constructor(options={}) {
         const defaults = {
             xSize: 1.0,
             ySize: 1.0,
@@ -14,8 +13,7 @@ class TerrainHelper {
             xS: 63,
             yS: 63,
         };
-        const actual = {};
-        Object.assign(actual, defaults, params);
+        let actual = Object.assign({}, defaults, options);
         this.xSize = actual.xSize;
         this.ySize = actual.ySize;
         this.maxHeight = actual.maxHeight;
@@ -107,16 +105,27 @@ class TerrainHelper {
         m.scale.y = 1.25;
         return m;
     }
-    getScatterMeshesScene(terrainGeom, mag=0.001, spread=0.02) {
-        return THREE.Terrain.ScatterMeshes(terrainGeom, {
-            // mesh: new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 12, 6)),
-            // mesh: new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.06, 0.03)),
-            mesh: TerrainHelper.buildTree(mag),
-            w: this.xS,
-            h: this.yS,
-            spread: spread,
-            randomness: Math.random,
-        });
+    getScatterMeshesScene(terrainGeom, merge=true, mag=0.001, spread=0.02) {
+        // const _mesh = new THREE.Mesh(new THREE.CylinderGeometry(10*mag, 10*mag, 60*mag, 30*mag));
+        const _mesh = TerrainHelper.buildTree(mag);
+
+        if (!merge) {
+            // Kludge -
+            // Here we want to track indivisual scattered meshes.
+            // THREE.Terrain.ScatterMeshes() does not merge meshes when
+            // the geometry is THREE.Geometry.  So convert to THREE.BufferGeometry.
+            _mesh.geometry = new THREE.BufferGeometry().fromGeometry(_mesh.geometry);
+        }
+        return {
+            scene: THREE.Terrain.ScatterMeshes(terrainGeom, {
+                mesh: _mesh,
+                w: this.xS,
+                h: this.yS,
+                spread: spread,
+                randomness: Math.random,
+            }),
+            material: _mesh.material,
+        };
     }
 
     static getSkyDome(cb) {

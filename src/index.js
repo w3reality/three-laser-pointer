@@ -85,6 +85,7 @@ class Laser extends Line {
         this._src = new THREE.Vector3(0, 0, 0);
         this._raycaster = new THREE.Raycaster();
         this._infLen = actual.infLength;
+        this._meshes = [];
     }
     setSource(src, camera=null) {
         // in case camera is given, treat (x, y, z) as in the camera coords
@@ -125,11 +126,15 @@ class Laser extends Line {
         this._raycaster.setFromCamera(mouse, cam);
         return this._raycast(meshes, recursive, null);
     }
+    getMeshesHit() {
+        return this._meshes;
+    }
     point(pt, color=null) {
         // console.log("point():", this._src, pt);
         this.updatePoints([
             this._src.x, this._src.y, this._src.z,
             pt.x, pt.y, pt.z]);
+        this._meshes.length = 0;
         if (color) {
             this.material.color.setHex(color);
         }
@@ -181,6 +186,8 @@ class Laser extends Line {
 
     _computeReflections(src, dir, isect, meshes, maxReflect) {
         const arr = [];
+        this._meshes = [isect.object]; // re-init
+
         while (1) {
             let normalMatrix = new THREE.Matrix3().getNormalMatrix(isect.object.matrixWorld);
             let normalWorld = isect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
@@ -190,6 +197,7 @@ class Laser extends Line {
             if (isectNew) {
                 let pt = isectNew.point;
                 arr.push(pt.x, pt.y, pt.z);
+                this._meshes.push(isectNew.object);
                 if (arr.length / 3 < maxReflect) {
                     src = pt;
                     dir = ref;
