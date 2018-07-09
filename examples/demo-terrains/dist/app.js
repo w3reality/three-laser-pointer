@@ -155,6 +155,9 @@ resizeCanvasToDisplaySize(true); // first time
 
 var appData = function () {
     var scene = new THREE.Scene();
+    var _render = function _render() {
+        renderer.render(scene, camera);
+    };
 
     //======== add light
     // https://github.com/mrdoob/three.js/blob/master/examples/webvr_cubes.html
@@ -163,14 +166,14 @@ var appData = function () {
     // light.position.set( 1, 1, 1 ).normalize();
     // scene.add( light );
 
-    //======== add more
-    scene.add(new THREE.AxesHelper(1));
-
     // const cam = new THREE.PerspectiveCamera(60, 1, 0.01, 0.5);
     // scene.add(new THREE.CameraHelper(cam));
     // cam.position.set(0, 0, 2);
     // cam.rotation.x = Math.PI / 4;
     // cam.updateMatrixWorld();  // reflect pose change to CameraHelper
+
+    //======== add more
+    scene.add(new THREE.AxesHelper(1));
 
     var walls = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshPhongMaterial({
         color: 0xc0e0c0,
@@ -185,22 +188,16 @@ var appData = function () {
 
     //======== add laser
     if (0) {
-        var line = new _threeLaserPointer2.default.Line(32, 0x00ffff);
-        // line.updatePointsRandomWalk(32);
-        // scene.add(line);
+        // yellow thunder
+        var _line = new _threeLaserPointer2.default.Line(32, 0xffff00);
+        _line.updatePointsRandomWalk(32);
+        scene.add(_line);
     }
 
-    //?????????????????????? why laser gone without this????????
-    var line99 = new _threeLaserPointer2.default.Line(0, 0x00ffff); // FIXME!!!!!!!!!????????????????????
-
-    var laser = new _threeLaserPointer2.default.Laser({
-        color: 0xffffff
+    var _laser = new _threeLaserPointer2.default.Laser({
+        color: 0xff0000
     });
-    scene.add(laser);
-
-    var _render = function _render() {
-        renderer.render(scene, camera);
-    };
+    scene.add(_laser);
 
     //======== add terrain
     var thelper = new _terrainHelper2.default({
@@ -256,23 +253,23 @@ var appData = function () {
         scene: scene,
         render: _render,
         pick: function pick(mx, my, cam) {
-            var isect = laser.raycastFromCamera(mx, my, canvas.width, canvas.height, cam, meshesInteraction);
+            var isect = _laser.raycastFromCamera(mx, my, canvas.width, canvas.height, cam, meshesInteraction);
             if (isect !== null) {
                 // console.log('isect:', isect);
                 var pt = isect.point;
                 // console.log('pt:', pt);
 
                 if (1) {
-                    // laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), cam);
-                    laser.setSource(new THREE.Vector3(0.3, -0.4, 2.5), cam);
+                    // _laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), cam);
+                    _laser.setSource(new THREE.Vector3(0.3, -0.4, 2.5), cam);
                 } else {
-                    laser.setSource(new THREE.Vector3(0, 0, 0));
+                    _laser.setSource(new THREE.Vector3(0, 0, 0));
                 }
 
                 var color = guiData.color.replace("#", "0x");
                 if (1) {
-                    laser.pointWithRaytrace(pt, meshesInteraction, color, 16);
-                    var meshesHit = laser.getMeshesHit();
+                    _laser.pointWithRaytrace(pt, meshesInteraction, color, 16);
+                    var meshesHit = _laser.getMeshesHit();
                     // console.log('meshesHit:', meshesHit);
                     meshesHit.forEach(function (mesh) {
                         if (mesh.name !== 'terrain') {
@@ -280,22 +277,22 @@ var appData = function () {
                         }
                     });
                 } else {
-                    laser.point(pt, color);
+                    _laser.point(pt, color);
                 }
             } else {
                 // console.log('no isects');
-                laser.clearPoints();
+                _laser.clearPoints();
             }
             // = 1(src point) + #(reflection points) + 1(end point)
-            // console.log('#points:', laser.getPoints().length);
+            // console.log('#points:', _laser.getPoints().length);
 
-            var refPoints = laser.getPoints();
+            var refPoints = _laser.getPoints();
             refPoints.shift();
             refPoints.pop();
             console.log('refPoints:', refPoints);
         },
         clearPick: function clearPick() {
-            laser.clearPoints();
+            _laser.clearPoints();
         }
     };
 }(); // end of appData init
@@ -99776,7 +99773,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
             var _three = __webpack_require__(1);
 
-            var THREE = _interopRequireWildcard(_three);
+            var THREE_ES6 = _interopRequireWildcard(_three);
 
             function _interopRequireWildcard(obj) {
                 if (obj && obj.__esModule) {
@@ -99816,8 +99813,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 if (typeof superClass !== "function" && superClass !== null) {
                     throw new TypeError("Super expression must either be null or a function, not " + (typeof superClass === 'undefined' ? 'undefined' : _typeof(superClass)));
                 }subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } });if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-            } // https://threejs.org/docs/#manual/introduction/Import-via-modules
+            } // if THREE is global (via script tag loading), use that THREE to prevent
+            // conflicts with ES6 version...
 
+
+            console.log('window.THREE:', window.THREE);
+            var THREE = window.THREE ? window.THREE : THREE_ES6;
 
             var Line = function (_THREE$Line) {
                 _inherits(Line, _THREE$Line);
