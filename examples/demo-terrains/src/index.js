@@ -14,6 +14,9 @@ import DDSLoader from 'three-es6-plugin/es6/DDSLoader';
 import LaserPointer from '../../../lib/three-laser-pointer'; // for dev
 console.log('LaserPointer:', LaserPointer);
 
+import $ from 'jquery';
+// console.log('$:', $);
+
 const canvas = document.getElementById("canvas");
 const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.001, 10000);
 // camera.position.set(-0.1, 0.15, 0.5);
@@ -140,6 +143,27 @@ const appData = (() => {
 
     const _wireframeMat = new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true});
 
+    const $msg = $('#msg');
+    const toCoords = (vec, nFloats=3) => {
+        return `(${vec.x.toFixed(nFloats)}, ${vec.y.toFixed(nFloats)}, ${vec.z.toFixed(nFloats)})`;
+    };
+    const toCoordsArray = vecArray => {
+        return vecArray.map(vec => toCoords(vec)).join(', ');
+    };
+    const showLaserStats = (laser) => {
+        let refPoints = laser.getPoints();
+        let srcPt = refPoints.shift();
+        let infPt = refPoints.pop();
+        // console.log('refPoints:', refPoints);
+        $msg.empty();
+        if (refPoints.length > 0) {
+            $msg.append(`<div>laser source: ${toCoords(srcPt)}</div>`);
+            $msg.append(`<div># reflections: ${refPoints.length}</div>`);
+            $msg.append(`<div>reflection points: ${toCoordsArray(refPoints)}</div>`);
+            // $msg.append(`<div>reflection meshes: ${laser.getMeshesHit().map(mesh => mesh.uuid).join(', ')}</div>`);
+        }
+    };
+
     console.log('scene:', scene);
     return {
         scene: scene,
@@ -178,11 +202,7 @@ const appData = (() => {
             }
             // = 1(src point) + #(reflection points) + 1(end point)
             // console.log('#points:', _laser.getPoints().length);
-
-            let refPoints = _laser.getPoints();
-            refPoints.shift();
-            refPoints.pop();
-            console.log('refPoints:', refPoints);
+            showLaserStats(_laser);
         },
         clearPick: () => {
             _laser.clearPoints();
