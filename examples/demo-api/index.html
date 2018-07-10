@@ -267,15 +267,15 @@
             class DemoGui extends DatGuiDefaults {
                 // override
                 initGui(gui, data, params) {
-                    let controller = null;
+                    let controller;
 
-                    controller = gui.addColor(params, 'color').name('Color');
+                    controller = gui.addColor(params, 'color').name('Laser Color');
                     controller.onChange((value) => { // or onFinishChange
                         data.config.color = value;
                     });
 
                     controller = gui.add(params, 'source',
-                        ["(0, 0, 0)", "VR-like"]).name('Source');
+                        ["(0, 0, 0)", "VR-like"]).name('Laser Source');
                     controller.onChange((value) => {
                         data.config.source = value;
                     });
@@ -296,6 +296,11 @@
                         this.applyDefaults();
                         Object.assign(data.config, params);
                     });
+
+                    controller = gui.add(params, 'sourceCode').name("Source Code");
+                    controller.onChange((value) => {
+                        window.location.href = "https://github.com/w3reality/three-laser-pointer/tree/master/examples/demo-api";
+                    });
                 }
             }
             const dg = new DemoGui(data);
@@ -305,6 +310,7 @@
                 raytrace: data.config.raytrace,
                 maxReflect: data.config.maxReflect,
                 reset: () => {},
+                sourceCode: () => {},
             });
         }
         //---- end gui

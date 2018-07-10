@@ -176,15 +176,9 @@ const appData = (() => {
                 let pt = isect.point;
                 // console.log('pt:', pt);
 
-                if (1) {
-                    // _laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), cam);
-                    _laser.setSource(new THREE.Vector3(0.003, -0.004, 0.002), cam);
-                } else {
-                    _laser.setSource(new THREE.Vector3(0, 0, 0));
-                }
-
                 let color = guiData.color.replace("#", "0x");
                 if (1) {
+                    _laser.setSource(new THREE.Vector3(0.003, -0.004, 0.002), cam);
                     _laser.pointWithRaytrace(pt, meshesInteraction, color, 16);
                     let meshesHit = _laser.getMeshesHit();
                     // console.log('meshesHit:', meshesHit);
@@ -210,7 +204,7 @@ const appData = (() => {
     };
 })(); // end of appData init
 
-const onChangeVis = (value) => {
+const onChangeVis = value => {
     console.log('vis:', value);
     appData.scene.traverse((node) => {
         if (!node instanceof THREE.Mesh) return;
@@ -224,6 +218,10 @@ const onChangeVis = (value) => {
         }
     });
     appData.render();
+};
+
+const onChangeLaserMode = value => {
+    //...
 };
 
 // begin render stuff
@@ -261,54 +259,68 @@ class Gui extends DatGuiDefaults {
     // override
     initGui(gui, data, params) {
         let controller;
+
+        controller = gui.add(params, 'laserMode',
+            ["Raytrace", "Measure", "None"]).name('Laser Mode');
+        controller.onChange((value) => {
+            onChangeLaserMode(value);
+            data.laserMode = value;
+        });
+
+        controller = gui.addColor(params, 'color').name('Laser Color');
+        controller.onChange((value) => { // or onFinishChange
+            data.color = value;
+        });
+
         controller = gui.add(params, 'vis',
             ["Textured", "Wireframe"]).name('Terrain');
         controller.onChange((value) => {
             onChangeVis(value);
             data.vis = value;
         });
-        controller = gui.add(params, 'laser').name('Laser');
-        controller.onChange((value) => {
-            data.laser = value;
-        });
-        controller = gui.addColor(params, 'color').name('Laser Color');
-        controller.onChange((value) => { // or onFinishChange
-            data.color = value;
-        });
-        controller = gui.add(params, 'evRender').name('evRender');
+
+        controller = gui.add(params, 'evRender').name('Passive Render');
         controller.onChange((value) => {
             onChangeEvRender(value);
             data.evRender = value;
         });
-        controller = gui.add(params, 'reset').name("Restore Defaults");
+
+        controller = gui.add(params, 'reset').name("Reset");
         controller.onChange((value) => {
             this.applyDefaults();
             onChangeVis(params.vis);
+            onChangeLaserMode(params.laserMode);
             onChangeEvRender(params.evRender);
 
             Object.assign(data, params);
+        });
+
+        controller = gui.add(params, 'sourceCode').name("Source Code");
+        controller.onChange((value) => {
+            window.location.href = "https://github.com/w3reality/three-laser-pointer/tree/master/examples/demo-terrains";
         });
     }
 }
 
 const guiData = { // defaults
     vis: "Textured",
-    laser: true,
+    laserMode: "Raytrace",
     color: "0x00ffff",
     evRender: true,
 };
 const dg = new Gui(guiData);
 dg.setDefaults({
     vis: guiData.vis,
-    laser: guiData.laser,
+    laserMode: guiData.laserMode,
     color: guiData.color.replace("0x", "#"),
     evRender: guiData.evRender,
     reset: () => {},
+    sourceCode: () => {},
 });
 // dg.gui.close();
 
 renderer.domElement.addEventListener('mousemove', (e) => {
-    if (guiData.laser) {
+    if (guiData.laserMode !== 'None') {
         // https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
         let rect = canvas.getBoundingClientRect();
         let mx = e.clientX - rect.left;
