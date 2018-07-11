@@ -164,7 +164,13 @@ const appData = (() => {
         }
     };
 
+    const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const getRandomColor = () => 65536 * getRandomInt(0, 255) +
+        256 * getRandomInt(0, 255) + getRandomInt(0, 255);
+    const _laserMarkTmp = new LaserPointer.Laser({maxPoints: 2});
+    scene.add(_laserMarkTmp);
     let markPair = null;
+    let _laserMarkColor;
 
     console.log('scene:', scene);
     return {
@@ -183,13 +189,16 @@ const appData = (() => {
                     markPair.push(pt);
                     // console.log('registering markPair:', markPair);
                     let laser = new LaserPointer.Laser({
-                        color: LaserPointer.Laser.selectColorRandom(),
+                        maxPoints: 2,
+                        color: _laserMarkColor,
                     });
-                    laser.updatePoints(LaserPointer.Laser.flattenPoints(markPair))
+                    laser.updatePoints(markPair);
                     scene.add(laser);
                     markPair = null;
                 } else {
                     markPair = [pt,];
+                    _laserMarkColor = getRandomColor();
+                    console.log('new color:', _laserMarkColor);
                 }
                 // console.log('markPair:', markPair);
             }
@@ -227,6 +236,14 @@ const appData = (() => {
                 } else if (guiData.laserMode === "Measure") {
                     _laser.setSource(ptSrc, camera);
                     _laser.point(pt, 0xffffff);
+
+                    if (markPair) {
+                        _laserMarkTmp.setSource(markPair[0]);
+                        _laserMarkTmp.point(pt, _laserMarkColor);
+                        _laserMarkTmp.visible = true;
+                    } else {
+                        _laserMarkTmp.visible = false;
+                    }
                 }
             } else {
                 // console.log('no isects');
@@ -379,14 +396,27 @@ const getMouseCoords = e => {
     // console.log('getMouseCoords():', mx, my, canvas.width, canvas.height);
     return [mx, my];
 };
-renderer.domElement.addEventListener('mousemove', e => {
+
+// https://stackoverflow.com/questions/6042202/how-to-distinguish-mouse-click-and-drag
+let isDragging = false;
+renderer.domElement.addEventListener("mousedown", e => {
+    isDragging = false;
+}, false);
+renderer.domElement.addEventListener("mousemove", e => {
+    isDragging = true;
     let coords = getMouseCoords(e);
     appData.pick(coords[0], coords[1]);
-});
-renderer.domElement.addEventListener('click', e => {
-    let coords = getMouseCoords(e);
-    appData.mark(coords[0], coords[1]);
-});
+}, false);
+renderer.domElement.addEventListener("mouseup", e => {
+    if (isDragging) {
+        console.log("mouseup: drag");
+        // nop
+    } else {
+        console.log("mouseup: click");
+        let coords = getMouseCoords(e);
+        appData.mark(coords[0], coords[1]);
+    }
+}, false);
 
 if (guiData.evRender) {
     render(); // first time

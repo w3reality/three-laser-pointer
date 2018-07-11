@@ -40,6 +40,12 @@ class Line extends THREE.Line {
         }
         return positions;
     }
+    setColor(color) {
+        this.material.color.setHex(color);
+    }
+    getColor() {
+        return this.material.color;
+    }
     getPoints() {
         let arr = this.geometry.attributes.position.array;
         let points = [];
@@ -52,18 +58,10 @@ class Line extends THREE.Line {
         return arrPoints.map(pt => [pt.x, pt.y, pt.z])
             .reduce((acc, ele) => acc.concat(ele));
     }
-    // https://stackoverflow.com/questions/10014271/generate-random-color-distinguishable-to-humans
-    // var color = selectColor(Math.floor(Math.random() * 10), 10);
-    // var color = selectColor(Math.floor(Math.random() * 999), 10);
-    // var color = selectColor(8, 13);
-    static _selectColor(colorNum, colors) {
-        if (colors < 1) colors = 1; // defaults to one color - avoid divide by zero
-        return "hsl(" + (colorNum * (360 / colors) % 360) + ",100%,50%)";
-    }
-    static selectColorRandom(n=10) {
-        return this._selectColor(Math.floor(Math.random() * n), n);
-    }
-    updatePoints(arr) {
+    updatePoints(arr, isFlatten=false) {
+        if (!isFlatten) {
+            arr = Laser.flattenPoints(arr);
+        }
         let attrPos = this.geometry.attributes.position;
         let maxPoints = attrPos.count;
         let numPoints = arr.length / 3;
@@ -82,10 +80,10 @@ class Line extends THREE.Line {
         this._numPoints = numPoints;
     }
     clearPoints() {
-        this.updatePoints([]);
+        this.updatePoints([], true);
     }
     updatePointsRandomWalk(numPoints) {
-        this.updatePoints(Line._getPointsRandomWalk(numPoints));
+        this.updatePoints(Line._getPointsRandomWalk(numPoints), true);
     };
 }
 
@@ -151,7 +149,7 @@ class Laser extends Line {
         // console.log("point():", this._src, pt);
         this.updatePoints([
             this._src.x, this._src.y, this._src.z,
-            pt.x, pt.y, pt.z]);
+            pt.x, pt.y, pt.z], true);
         this._meshes.length = 0;
         if (color) {
             this.material.color.setHex(color);
@@ -168,7 +166,7 @@ class Laser extends Line {
 
         let arrRefs = this.computeReflections(
             pt, dir, isect, meshes, maxReflect);
-        this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, ...arrRefs]);
+        this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, ...arrRefs], true);
     }
 
     // DEPRECATED: this recursive version has stack depth limitation

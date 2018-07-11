@@ -280,7 +280,16 @@ var appData = function () {
         }
     };
 
+    var getRandomInt = function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+    var getRandomColor = function getRandomColor() {
+        return 65536 * getRandomInt(0, 255) + 256 * getRandomInt(0, 255) + getRandomInt(0, 255);
+    };
+    var _laserMarkTmp = new _threeLaserPointer2.default.Laser({ maxPoints: 2 });
+    scene.add(_laserMarkTmp);
     var markPair = null;
+    var _laserMarkColor = void 0;
 
     console.log('scene:', scene);
     return {
@@ -298,13 +307,16 @@ var appData = function () {
                     markPair.push(pt);
                     // console.log('registering markPair:', markPair);
                     var laser = new _threeLaserPointer2.default.Laser({
-                        color: _threeLaserPointer2.default.Laser.selectColorRandom()
+                        maxPoints: 2,
+                        color: _laserMarkColor
                     });
-                    laser.updatePoints(_threeLaserPointer2.default.Laser.flattenPoints(markPair));
+                    laser.updatePoints(markPair);
                     scene.add(laser);
                     markPair = null;
                 } else {
                     markPair = [pt];
+                    _laserMarkColor = getRandomColor();
+                    console.log('new color:', _laserMarkColor);
                 }
                 // console.log('markPair:', markPair);
             }
@@ -341,6 +353,14 @@ var appData = function () {
                 } else if (guiData.laserMode === "Measure") {
                     _laser.setSource(ptSrc, camera);
                     _laser.point(pt, 0xffffff);
+
+                    if (markPair) {
+                        _laserMarkTmp.setSource(markPair[0]);
+                        _laserMarkTmp.point(pt, _laserMarkColor);
+                        _laserMarkTmp.visible = true;
+                    } else {
+                        _laserMarkTmp.visible = false;
+                    }
                 }
             } else {
                 // console.log('no isects');
@@ -507,14 +527,27 @@ var getMouseCoords = function getMouseCoords(e) {
     // console.log('getMouseCoords():', mx, my, canvas.width, canvas.height);
     return [mx, my];
 };
-renderer.domElement.addEventListener('mousemove', function (e) {
+
+// https://stackoverflow.com/questions/6042202/how-to-distinguish-mouse-click-and-drag
+var isDragging = false;
+renderer.domElement.addEventListener("mousedown", function (e) {
+    isDragging = false;
+}, false);
+renderer.domElement.addEventListener("mousemove", function (e) {
+    isDragging = true;
     var coords = getMouseCoords(e);
     appData.pick(coords[0], coords[1]);
-});
-renderer.domElement.addEventListener('click', function (e) {
-    var coords = getMouseCoords(e);
-    appData.mark(coords[0], coords[1]);
-});
+}, false);
+renderer.domElement.addEventListener("mouseup", function (e) {
+    if (isDragging) {
+        console.log("mouseup: drag");
+        // nop
+    } else {
+        console.log("mouseup: click");
+        var coords = getMouseCoords(e);
+        appData.mark(coords[0], coords[1]);
+    }
+}, false);
 
 if (guiData.evRender) {
     render(); // first time
@@ -99941,6 +99974,16 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                         // this.frustumCulled = false;
                     }
                 }, {
+                    key: 'setColor',
+                    value: function setColor(color) {
+                        this.material.color.setHex(color);
+                    }
+                }, {
+                    key: 'getColor',
+                    value: function getColor() {
+                        return this.material.color;
+                    }
+                }, {
                     key: 'getPoints',
                     value: function getPoints() {
                         var arr = this.geometry.attributes.position.array;
@@ -99953,6 +99996,11 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 }, {
                     key: 'updatePoints',
                     value: function updatePoints(arr) {
+                        var isFlatten = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+                        if (!isFlatten) {
+                            arr = Laser.flattenPoints(arr);
+                        }
                         var attrPos = this.geometry.attributes.position;
                         var maxPoints = attrPos.count;
                         var numPoints = arr.length / 3;
@@ -99973,12 +100021,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 }, {
                     key: 'clearPoints',
                     value: function clearPoints() {
-                        this.updatePoints([]);
+                        this.updatePoints([], true);
                     }
                 }, {
                     key: 'updatePointsRandomWalk',
                     value: function updatePointsRandomWalk(numPoints) {
-                        this.updatePoints(Line._getPointsRandomWalk(numPoints));
+                        this.updatePoints(Line._getPointsRandomWalk(numPoints), true);
                     }
                 }], [{
                     key: '_getPointsRandomWalk',
@@ -100005,22 +100053,6 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                         }).reduce(function (acc, ele) {
                             return acc.concat(ele);
                         });
-                    }
-                    // https://stackoverflow.com/questions/10014271/generate-random-color-distinguishable-to-humans
-                    // var color = selectColor(Math.floor(Math.random() * 10), 10);
-                    // var color = selectColor(Math.floor(Math.random() * 999), 10);
-                    // var color = selectColor(8, 13);
-
-                }, {
-                    key: '_selectColor',
-                    value: function _selectColor(colorNum, colors) {
-                        if (colors < 1) colors = 1; // defaults to one color - avoid divide by zero
-                        return "hsl(" + colorNum * (360 / colors) % 360 + ",100%,50%)";
-                    }
-                }, {
-                    key: 'selectColorRandom',
-                    value: function selectColorRandom() {
-                        this._selectColor();
                     }
                 }]);
 
@@ -100110,7 +100142,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                         var color = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
 
                         // console.log("point():", this._src, pt);
-                        this.updatePoints([this._src.x, this._src.y, this._src.z, pt.x, pt.y, pt.z]);
+                        this.updatePoints([this._src.x, this._src.y, this._src.z, pt.x, pt.y, pt.z], true);
                         this._meshes.length = 0;
                         if (color) {
                             this.material.color.setHex(color);
@@ -100132,7 +100164,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                         if (!isect) return;
 
                         var arrRefs = this.computeReflections(pt, dir, isect, meshes, maxReflect);
-                        this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z].concat(_toConsumableArray(arrRefs)));
+                        this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z].concat(_toConsumableArray(arrRefs)), true);
                     }
 
                     // DEPRECATED: this recursive version has stack depth limitation
