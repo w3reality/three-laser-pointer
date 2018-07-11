@@ -164,22 +164,59 @@ const appData = (() => {
         }
     };
 
+    let markPair = null;
+
     console.log('scene:', scene);
     return {
         scene: scene,
         render: _render,
-        pick: (mx, my, cam) => {
+        mark: (mx, my) => {
+            if (guiData.laserMode !== 'Measure') return;
+
             let isect = _laser.raycastFromCamera(
-                mx, my, canvas.width, canvas.height, cam, meshesInteraction);
+                mx, my, canvas.width, canvas.height, camera, meshesInteraction);
             if (isect !== null) {
                 // console.log('isect:', isect);
                 let pt = isect.point;
-                // console.log('pt:', pt);
+                console.log('mark pt:', pt);
+                if (markPair) {
+                    markPair.push(pt);
+                    // console.log('registering markPair:', markPair);
+                    let laser = new LaserPointer.Laser({
+                        color: LaserPointer.Laser.selectColorRandom(),
+                    });
+                    laser.updatePoints(LaserPointer.Laser.flattenPoints(markPair))
+                    scene.add(laser);
+                    markPair = null;
+                } else {
+                    markPair = [pt,];
+                }
+                // console.log('markPair:', markPair);
+            }
 
-                let color = guiData.color.replace("#", "0x");
-                if (1) {
-                    _laser.setSource(new THREE.Vector3(0.003, -0.004, 0.002), cam);
-                    _laser.pointWithRaytrace(pt, meshesInteraction, color, 16);
+            if (guiData.evRender) {
+                render();
+            }
+            // showMeasureStats(_laser);
+        },
+        pick: (mx, my) => {
+            if (guiData.laserMode === 'None') {
+                _laser.clearPoints();
+                return;
+            }
+
+            let isect = _laser.raycastFromCamera(
+                mx, my, canvas.width, canvas.height, camera, meshesInteraction);
+            if (isect !== null) {
+                // console.log('isect:', isect);
+                let pt = isect.point;
+                // console.log('pick pt:', pt);
+
+                let ptSrc = new THREE.Vector3(0.003, -0.004, 0.002);
+                if (guiData.laserMode === "Raytrace") {
+                    _laser.setSource(ptSrc, camera);
+                    _laser.pointWithRaytrace(pt, meshesInteraction, 0x00ffff, 16);
+
                     let meshesHit = _laser.getMeshesHit();
                     // console.log('meshesHit:', meshesHit);
                     meshesHit.forEach((mesh) => {
@@ -187,19 +224,21 @@ const appData = (() => {
                             mesh.material = _wireframeMat;
                         }
                     });
-                } else {
-                    _laser.point(pt, color);
+                } else if (guiData.laserMode === "Measure") {
+                    _laser.setSource(ptSrc, camera);
+                    _laser.point(pt, 0xffffff);
                 }
             } else {
                 // console.log('no isects');
                 _laser.clearPoints();
             }
+
+            if (guiData.evRender) {
+                render();
+            }
             // = 1(src point) + #(reflection points) + 1(end point)
             // console.log('#points:', _laser.getPoints().length);
             showLaserStats(_laser);
-        },
-        clearPick: () => {
-            _laser.clearPoints();
         },
     };
 })(); // end of appData init
@@ -213,8 +252,20 @@ const onChangeVis = value => {
         if (!node.name) return;
 
         if (node.name === "terrain") {
-            node.material.wireframe = value === 'Wireframe';
-            node.material.needsUpdate = true;
+            switch (value) {
+                case "Textured":
+                    node.material.wireframe = false;
+                    node.material.needsUpdate = true;
+                    node.visible = true;
+                    break;
+                case "Wireframe":
+                    node.material.wireframe = true;
+                    node.material.needsUpdate = true;
+                    node.visible = true;
+                    break;
+                case "None":
+                    node.visible = false;
+            }
         }
     });
     appData.render();
@@ -267,13 +318,13 @@ class Gui extends DatGuiDefaults {
             data.laserMode = value;
         });
 
-        controller = gui.addColor(params, 'color').name('Laser Color');
-        controller.onChange((value) => { // or onFinishChange
-            data.color = value;
-        });
+        // controller = gui.addColor(params, 'color').name('Laser Color');
+        // controller.onChange((value) => { // or onFinishChange
+        //     data.color = value;
+        // });
 
         controller = gui.add(params, 'vis',
-            ["Textured", "Wireframe"]).name('Terrain');
+            ["Textured", "Wireframe", "None"]).name('Terrain');
         controller.onChange((value) => {
             onChangeVis(value);
             data.vis = value;
@@ -304,36 +355,37 @@ class Gui extends DatGuiDefaults {
 
 const guiData = { // defaults
     vis: "Textured",
-    laserMode: "Raytrace",
-    color: "0x00ffff",
+    // laserMode: "Raytrace",
+    laserMode: "Measure",
+    // color: "0x00ffff",
     evRender: true,
 };
 const dg = new Gui(guiData);
 dg.setDefaults({
     vis: guiData.vis,
     laserMode: guiData.laserMode,
-    color: guiData.color.replace("0x", "#"),
+    // color: guiData.color.replace("0x", "#"),
     evRender: guiData.evRender,
     reset: () => {},
     sourceCode: () => {},
 });
 // dg.gui.close();
 
-renderer.domElement.addEventListener('mousemove', (e) => {
-    if (guiData.laserMode !== 'None') {
-        // https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
-        let rect = canvas.getBoundingClientRect();
-        let mx = e.clientX - rect.left;
-        let my = e.clientY - rect.top;
-        // console.log('mouse:', mx, my, canvas.width, canvas.height);
-        appData.pick(mx, my, camera);
-    } else {
-        appData.clearPick();
-    }
-
-    if (guiData.evRender) {
-        render();
-    }
+const getMouseCoords = e => {
+    // https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
+    let rect = canvas.getBoundingClientRect();
+    let mx = e.clientX - rect.left;
+    let my = e.clientY - rect.top;
+    // console.log('getMouseCoords():', mx, my, canvas.width, canvas.height);
+    return [mx, my];
+};
+renderer.domElement.addEventListener('mousemove', e => {
+    let coords = getMouseCoords(e);
+    appData.pick(coords[0], coords[1]);
+});
+renderer.domElement.addEventListener('click', e => {
+    let coords = getMouseCoords(e);
+    appData.mark(coords[0], coords[1]);
 });
 
 if (guiData.evRender) {

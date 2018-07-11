@@ -48,6 +48,21 @@ class Line extends THREE.Line {
         }
         return points;
     }
+    static flattenPoints(arrPoints) {
+        return arrPoints.map(pt => [pt.x, pt.y, pt.z])
+            .reduce((acc, ele) => acc.concat(ele));
+    }
+    // https://stackoverflow.com/questions/10014271/generate-random-color-distinguishable-to-humans
+    // var color = selectColor(Math.floor(Math.random() * 10), 10);
+    // var color = selectColor(Math.floor(Math.random() * 999), 10);
+    // var color = selectColor(8, 13);
+    static _selectColor(colorNum, colors) {
+        if (colors < 1) colors = 1; // defaults to one color - avoid divide by zero
+        return "hsl(" + (colorNum * (360 / colors) % 360) + ",100%,50%)";
+    }
+    static selectColorRandom(n=10) {
+        return this._selectColor(Math.floor(Math.random() * n), n);
+    }
     updatePoints(arr) {
         let attrPos = this.geometry.attributes.position;
         let maxPoints = attrPos.count;

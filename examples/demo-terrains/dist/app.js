@@ -60,11 +60,469 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 2);
+/******/ 	return __webpack_require__(__webpack_require__.s = 0);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _datGuiDefaults = __webpack_require__(3);
+
+var _datGuiDefaults2 = _interopRequireDefault(_datGuiDefaults);
+
+var _stats = __webpack_require__(4);
+
+var _stats2 = _interopRequireDefault(_stats);
+
+var _terrainHelper = __webpack_require__(12);
+
+var _terrainHelper2 = _interopRequireDefault(_terrainHelper);
+
+var _OrbitControls = __webpack_require__(6);
+
+var _OrbitControls2 = _interopRequireDefault(_OrbitControls);
+
+var _OBJLoader = __webpack_require__(7);
+
+var _OBJLoader2 = _interopRequireDefault(_OBJLoader);
+
+var _MTLLoader = __webpack_require__(8);
+
+var _MTLLoader2 = _interopRequireDefault(_MTLLoader);
+
+var _DDSLoader = __webpack_require__(9);
+
+var _DDSLoader2 = _interopRequireDefault(_DDSLoader);
+
+var _threeLaserPointer = __webpack_require__(10);
+
+var _threeLaserPointer2 = _interopRequireDefault(_threeLaserPointer);
+
+var _jquery = __webpack_require__(13);
+
+var _jquery2 = _interopRequireDefault(_jquery);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+// import * as THREE from 'three';
+// for three.terrain.js, load threejs via script tag in index.html
+
+
+// import LaserPointer from '../../../dist/three-laser-pointer.min'; // for prod
+
+
+// for dev
+console.log('LaserPointer:', _threeLaserPointer2.default);
+
+// console.log('$:', $);
+
+var canvas = document.getElementById("canvas");
+var camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.001, 10000);
+// camera.position.set(-0.1, 0.15, 0.5);
+camera.position.set(0, 0, 0.5);
+// camera.up = new THREE.Vector3(0, 0, 1); // important for OrbitControls
+camera.up = new THREE.Vector3(0, 1, 0); // important for OrbitControls
+
+var renderer = new THREE.WebGLRenderer({
+    // alpha: true,
+    canvas: canvas
+});
+
+var controls = new _OrbitControls2.default(camera, renderer.domElement);
+
+// https://stackoverflow.com/questions/29884485/threejs-canvas-size-based-on-container
+var resizeCanvasToDisplaySize = function resizeCanvasToDisplaySize() {
+    var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+    var width = canvas.clientWidth;
+    var height = canvas.clientHeight;
+
+    // adjust displayBuffer size to match
+    if (force || canvas.width != width || canvas.height != height) {
+        // you must pass false here or three.js sadly fights the browser
+        // console.log "resizing: #{canvas.width} #{canvas.height} -> #{width} #{height}"
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+    }
+};
+resizeCanvasToDisplaySize(true); // first time
+
+var appData = function () {
+    var scene = new THREE.Scene();
+    var _render = function _render() {
+        renderer.render(scene, camera);
+    };
+
+    //======== add light
+    // https://github.com/mrdoob/three.js/blob/master/examples/webvr_cubes.html
+    // scene.add( new THREE.HemisphereLight( 0x606060, 0x404040 ) );
+    // const light = new THREE.DirectionalLight( 0xffffff );
+    // light.position.set( 1, 1, 1 ).normalize();
+    // scene.add( light );
+
+    // const cam = new THREE.PerspectiveCamera(60, 1, 0.01, 0.5);
+    // scene.add(new THREE.CameraHelper(cam));
+    // cam.position.set(0, 0, 2);
+    // cam.rotation.x = Math.PI / 4;
+    // cam.updateMatrixWorld();  // reflect pose change to CameraHelper
+
+    //======== add more
+    scene.add(new THREE.AxesHelper(1));
+
+    var walls = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshPhongMaterial({
+        color: 0xc0e0c0,
+        side: THREE.BackSide,
+        wireframe: true,
+        opacity: 1,
+        transparent: true
+    }));
+    // walls.rotation.y = Math.PI / 6;
+    walls.name = "walls";
+    scene.add(walls);
+
+    //======== add laser
+    if (0) {
+        // yellow thunder
+        var _line = new _threeLaserPointer2.default.Line(32, 0xffff00);
+        _line.updatePointsRandomWalk(32);
+        scene.add(_line);
+    }
+
+    var _laser = new _threeLaserPointer2.default.Laser({
+        color: 0xff0000
+    });
+    scene.add(_laser);
+
+    //======== add terrain
+    var thelper = new _terrainHelper2.default({
+        xSize: 1.0,
+        ySize: 1.0,
+        maxHeight: 0.1,
+        minHeight: -0.1
+    });
+
+    // for registering meshes to interact with
+    var meshesInteraction = [];
+
+    _terrainHelper2.default.getBlendedMaterial(function (blend) {
+        // TerrainHelper.loadHeightmapImage('./heightmap.png', (img) => {
+        _terrainHelper2.default.loadHeightmapImage('./heightmapMods.png', function (img) {
+            // const terrainScene = thelper.getTerrainScene(blend); // use auto-generated heightmap
+            var terrainScene = thelper.getTerrainScene(blend, img);
+            console.log('terrainScene:', terrainScene);
+            var terrain = terrainScene.children[0];
+            terrain.name = "terrain";
+            // terrain.rotation.x = 0.5 * Math.PI; // in case up-vector is (0,0,1)
+            meshesInteraction.push(terrain);
+
+            // Add randomly distributed foliage across the terrain geometry
+            var scattered = thelper.getScatterMeshesScene(terrain.geometry, false);
+            var scatterScene = scattered.scene;
+            // _scatteredMat = scattered.material;
+            console.log('scatterScene:', scatterScene);
+            terrainScene.add(scatterScene);
+
+            // scatterScene.children[10].material = new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true});
+            meshesInteraction = meshesInteraction.concat(scatterScene.children);
+            console.log('meshesInteraction:', meshesInteraction);
+
+            scene.add(terrainScene);
+            _render();
+        });
+    });
+
+    // set up other world components
+    _terrainHelper2.default.getSkyDome(function (skyDome) {
+        scene.add(skyDome);
+        _render();
+    });
+    scene.add(_terrainHelper2.default.getWater());
+    scene.add(_terrainHelper2.default.getSunLight());
+    scene.add(_terrainHelper2.default.getSkyLight());
+
+    var _wireframeMat = new THREE.MeshBasicMaterial({ color: 0x5566aa, wireframe: true });
+
+    var $msg = (0, _jquery2.default)('#msg');
+    var toCoords = function toCoords(vec) {
+        var nFloats = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 3;
+
+        return '(' + vec.x.toFixed(nFloats) + ', ' + vec.y.toFixed(nFloats) + ', ' + vec.z.toFixed(nFloats) + ')';
+    };
+    var toCoordsArray = function toCoordsArray(vecArray) {
+        return vecArray.map(function (vec) {
+            return toCoords(vec);
+        }).join(', ');
+    };
+    var showLaserStats = function showLaserStats(laser) {
+        var refPoints = laser.getPoints();
+        var srcPt = refPoints.shift();
+        var infPt = refPoints.pop();
+        // console.log('refPoints:', refPoints);
+        $msg.empty();
+        if (refPoints.length > 0) {
+            $msg.append('<div>laser source: ' + toCoords(srcPt) + '</div>');
+            $msg.append('<div># reflections: ' + refPoints.length + '</div>');
+            $msg.append('<div>reflection points: ' + toCoordsArray(refPoints) + '</div>');
+            // $msg.append(`<div>reflection meshes: ${laser.getMeshesHit().map(mesh => mesh.uuid).join(', ')}</div>`);
+        }
+    };
+
+    var markPair = null;
+
+    console.log('scene:', scene);
+    return {
+        scene: scene,
+        render: _render,
+        mark: function mark(mx, my) {
+            if (guiData.laserMode !== 'Measure') return;
+
+            var isect = _laser.raycastFromCamera(mx, my, canvas.width, canvas.height, camera, meshesInteraction);
+            if (isect !== null) {
+                // console.log('isect:', isect);
+                var pt = isect.point;
+                console.log('mark pt:', pt);
+                if (markPair) {
+                    markPair.push(pt);
+                    // console.log('registering markPair:', markPair);
+                    var laser = new _threeLaserPointer2.default.Laser({
+                        color: _threeLaserPointer2.default.Laser.selectColorRandom()
+                    });
+                    laser.updatePoints(_threeLaserPointer2.default.Laser.flattenPoints(markPair));
+                    scene.add(laser);
+                    markPair = null;
+                } else {
+                    markPair = [pt];
+                }
+                // console.log('markPair:', markPair);
+            }
+
+            if (guiData.evRender) {
+                render();
+            }
+            // showMeasureStats(_laser);
+        },
+        pick: function pick(mx, my) {
+            if (guiData.laserMode === 'None') {
+                _laser.clearPoints();
+                return;
+            }
+
+            var isect = _laser.raycastFromCamera(mx, my, canvas.width, canvas.height, camera, meshesInteraction);
+            if (isect !== null) {
+                // console.log('isect:', isect);
+                var pt = isect.point;
+                // console.log('pick pt:', pt);
+
+                var ptSrc = new THREE.Vector3(0.003, -0.004, 0.002);
+                if (guiData.laserMode === "Raytrace") {
+                    _laser.setSource(ptSrc, camera);
+                    _laser.pointWithRaytrace(pt, meshesInteraction, 0x00ffff, 16);
+
+                    var meshesHit = _laser.getMeshesHit();
+                    // console.log('meshesHit:', meshesHit);
+                    meshesHit.forEach(function (mesh) {
+                        if (mesh.name !== 'terrain') {
+                            mesh.material = _wireframeMat;
+                        }
+                    });
+                } else if (guiData.laserMode === "Measure") {
+                    _laser.setSource(ptSrc, camera);
+                    _laser.point(pt, 0xffffff);
+                }
+            } else {
+                // console.log('no isects');
+                _laser.clearPoints();
+            }
+
+            if (guiData.evRender) {
+                render();
+            }
+            // = 1(src point) + #(reflection points) + 1(end point)
+            // console.log('#points:', _laser.getPoints().length);
+            showLaserStats(_laser);
+        }
+    };
+}(); // end of appData init
+
+var onChangeVis = function onChangeVis(value) {
+    console.log('vis:', value);
+    appData.scene.traverse(function (node) {
+        if (!node instanceof THREE.Mesh) return;
+
+        // console.log(node.name);
+        if (!node.name) return;
+
+        if (node.name === "terrain") {
+            switch (value) {
+                case "Textured":
+                    node.material.wireframe = false;
+                    node.material.needsUpdate = true;
+                    node.visible = true;
+                    break;
+                case "Wireframe":
+                    node.material.wireframe = true;
+                    node.material.needsUpdate = true;
+                    node.visible = true;
+                    break;
+                case "None":
+                    node.visible = false;
+            }
+        }
+    });
+    appData.render();
+};
+
+var onChangeLaserMode = function onChangeLaserMode(value) {
+    //...
+};
+
+// begin render stuff
+var stats = new _stats2.default();
+stats.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild(stats.dom);
+var render = function render() {
+    stats.update();
+    resizeCanvasToDisplaySize();
+    appData.render();
+};
+
+var stopAnim = true;
+var animate = function animate() {
+    if (stopAnim) {
+        console.log('animate(): stopping');
+        return;
+    }
+    requestAnimationFrame(animate);
+    render();
+};
+var onChangeEvRender = function onChangeEvRender(value) {
+    if (value) {
+        console.log('onChangeEvRender(): stopping anim...');
+        stopAnim = true;
+    } else {
+        console.log('onChangeEvRender(): starting anim...');
+        stopAnim = false;
+        animate();
+    }
+};
+// end render stuff
+
+var Gui = function (_DatGuiDefaults) {
+    _inherits(Gui, _DatGuiDefaults);
+
+    function Gui() {
+        _classCallCheck(this, Gui);
+
+        return _possibleConstructorReturn(this, (Gui.__proto__ || Object.getPrototypeOf(Gui)).apply(this, arguments));
+    }
+
+    _createClass(Gui, [{
+        key: 'initGui',
+
+        // override
+        value: function initGui(gui, data, params) {
+            var _this2 = this;
+
+            var controller = void 0;
+
+            controller = gui.add(params, 'laserMode', ["Raytrace", "Measure", "None"]).name('Laser Mode');
+            controller.onChange(function (value) {
+                onChangeLaserMode(value);
+                data.laserMode = value;
+            });
+
+            // controller = gui.addColor(params, 'color').name('Laser Color');
+            // controller.onChange((value) => { // or onFinishChange
+            //     data.color = value;
+            // });
+
+            controller = gui.add(params, 'vis', ["Textured", "Wireframe", "None"]).name('Terrain');
+            controller.onChange(function (value) {
+                onChangeVis(value);
+                data.vis = value;
+            });
+
+            controller = gui.add(params, 'evRender').name('Passive Render');
+            controller.onChange(function (value) {
+                onChangeEvRender(value);
+                data.evRender = value;
+            });
+
+            controller = gui.add(params, 'reset').name("Reset");
+            controller.onChange(function (value) {
+                _this2.applyDefaults();
+                onChangeVis(params.vis);
+                onChangeLaserMode(params.laserMode);
+                onChangeEvRender(params.evRender);
+
+                Object.assign(data, params);
+            });
+
+            controller = gui.add(params, 'sourceCode').name("Source Code");
+            controller.onChange(function (value) {
+                window.location.href = "https://github.com/w3reality/three-laser-pointer/tree/master/examples/demo-terrains";
+            });
+        }
+    }]);
+
+    return Gui;
+}(_datGuiDefaults2.default);
+
+var guiData = { // defaults
+    vis: "Textured",
+    // laserMode: "Raytrace",
+    laserMode: "Measure",
+    // color: "0x00ffff",
+    evRender: true
+};
+var dg = new Gui(guiData);
+dg.setDefaults({
+    vis: guiData.vis,
+    laserMode: guiData.laserMode,
+    // color: guiData.color.replace("0x", "#"),
+    evRender: guiData.evRender,
+    reset: function reset() {},
+    sourceCode: function sourceCode() {}
+});
+// dg.gui.close();
+
+var getMouseCoords = function getMouseCoords(e) {
+    // https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left;
+    var my = e.clientY - rect.top;
+    // console.log('getMouseCoords():', mx, my, canvas.width, canvas.height);
+    return [mx, my];
+};
+renderer.domElement.addEventListener('mousemove', function (e) {
+    var coords = getMouseCoords(e);
+    appData.pick(coords[0], coords[1]);
+});
+renderer.domElement.addEventListener('click', function (e) {
+    var coords = getMouseCoords(e);
+    appData.mark(coords[0], coords[1]);
+});
+
+if (guiData.evRender) {
+    render(); // first time
+    controls.addEventListener('change', render);
+}
+
+/***/ }),
+/* 1 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -46971,7 +47429,7 @@ function LensFlare() {
 
 
 /***/ }),
-/* 1 */
+/* 2 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -93879,414 +94337,6 @@ function LensFlare() {
 
 
 /***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _datGuiDefaults = __webpack_require__(3);
-
-var _datGuiDefaults2 = _interopRequireDefault(_datGuiDefaults);
-
-var _stats = __webpack_require__(4);
-
-var _stats2 = _interopRequireDefault(_stats);
-
-var _terrainHelper = __webpack_require__(5);
-
-var _terrainHelper2 = _interopRequireDefault(_terrainHelper);
-
-var _OrbitControls = __webpack_require__(7);
-
-var _OrbitControls2 = _interopRequireDefault(_OrbitControls);
-
-var _OBJLoader = __webpack_require__(8);
-
-var _OBJLoader2 = _interopRequireDefault(_OBJLoader);
-
-var _MTLLoader = __webpack_require__(9);
-
-var _MTLLoader2 = _interopRequireDefault(_MTLLoader);
-
-var _DDSLoader = __webpack_require__(10);
-
-var _DDSLoader2 = _interopRequireDefault(_DDSLoader);
-
-var _threeLaserPointer = __webpack_require__(11);
-
-var _threeLaserPointer2 = _interopRequireDefault(_threeLaserPointer);
-
-var _jquery = __webpack_require__(13);
-
-var _jquery2 = _interopRequireDefault(_jquery);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-// import * as THREE from 'three';
-// for three.terrain.js, load threejs via script tag in index.html
-
-
-// import LaserPointer from '../../../dist/three-laser-pointer.min'; // for prod
-
-
-// for dev
-console.log('LaserPointer:', _threeLaserPointer2.default);
-
-// console.log('$:', $);
-
-var canvas = document.getElementById("canvas");
-var camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.001, 10000);
-// camera.position.set(-0.1, 0.15, 0.5);
-camera.position.set(0, 0, 0.5);
-// camera.up = new THREE.Vector3(0, 0, 1); // important for OrbitControls
-camera.up = new THREE.Vector3(0, 1, 0); // important for OrbitControls
-
-var renderer = new THREE.WebGLRenderer({
-    // alpha: true,
-    canvas: canvas
-});
-
-var controls = new _OrbitControls2.default(camera, renderer.domElement);
-
-// https://stackoverflow.com/questions/29884485/threejs-canvas-size-based-on-container
-var resizeCanvasToDisplaySize = function resizeCanvasToDisplaySize() {
-    var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-
-    var width = canvas.clientWidth;
-    var height = canvas.clientHeight;
-
-    // adjust displayBuffer size to match
-    if (force || canvas.width != width || canvas.height != height) {
-        // you must pass false here or three.js sadly fights the browser
-        // console.log "resizing: #{canvas.width} #{canvas.height} -> #{width} #{height}"
-        renderer.setSize(width, height, false);
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-    }
-};
-resizeCanvasToDisplaySize(true); // first time
-
-var appData = function () {
-    var scene = new THREE.Scene();
-    var _render = function _render() {
-        renderer.render(scene, camera);
-    };
-
-    //======== add light
-    // https://github.com/mrdoob/three.js/blob/master/examples/webvr_cubes.html
-    // scene.add( new THREE.HemisphereLight( 0x606060, 0x404040 ) );
-    // const light = new THREE.DirectionalLight( 0xffffff );
-    // light.position.set( 1, 1, 1 ).normalize();
-    // scene.add( light );
-
-    // const cam = new THREE.PerspectiveCamera(60, 1, 0.01, 0.5);
-    // scene.add(new THREE.CameraHelper(cam));
-    // cam.position.set(0, 0, 2);
-    // cam.rotation.x = Math.PI / 4;
-    // cam.updateMatrixWorld();  // reflect pose change to CameraHelper
-
-    //======== add more
-    scene.add(new THREE.AxesHelper(1));
-
-    var walls = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshPhongMaterial({
-        color: 0xc0e0c0,
-        side: THREE.BackSide,
-        wireframe: true,
-        opacity: 1,
-        transparent: true
-    }));
-    // walls.rotation.y = Math.PI / 6;
-    walls.name = "walls";
-    scene.add(walls);
-
-    //======== add laser
-    if (0) {
-        // yellow thunder
-        var _line = new _threeLaserPointer2.default.Line(32, 0xffff00);
-        _line.updatePointsRandomWalk(32);
-        scene.add(_line);
-    }
-
-    var _laser = new _threeLaserPointer2.default.Laser({
-        color: 0xff0000
-    });
-    scene.add(_laser);
-
-    //======== add terrain
-    var thelper = new _terrainHelper2.default({
-        xSize: 1.0,
-        ySize: 1.0,
-        maxHeight: 0.1,
-        minHeight: -0.1
-    });
-
-    // for registering meshes to interact with
-    var meshesInteraction = [];
-
-    _terrainHelper2.default.getBlendedMaterial(function (blend) {
-        // TerrainHelper.loadHeightmapImage('./heightmap.png', (img) => {
-        _terrainHelper2.default.loadHeightmapImage('./heightmapMods.png', function (img) {
-            // const terrainScene = thelper.getTerrainScene(blend); // use auto-generated heightmap
-            var terrainScene = thelper.getTerrainScene(blend, img);
-            console.log('terrainScene:', terrainScene);
-            var terrain = terrainScene.children[0];
-            terrain.name = "terrain";
-            // terrain.rotation.x = 0.5 * Math.PI; // in case up-vector is (0,0,1)
-            meshesInteraction.push(terrain);
-
-            // Add randomly distributed foliage across the terrain geometry
-            var scattered = thelper.getScatterMeshesScene(terrain.geometry, false);
-            var scatterScene = scattered.scene;
-            // _scatteredMat = scattered.material;
-            console.log('scatterScene:', scatterScene);
-            terrainScene.add(scatterScene);
-
-            // scatterScene.children[10].material = new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true});
-            meshesInteraction = meshesInteraction.concat(scatterScene.children);
-            console.log('meshesInteraction:', meshesInteraction);
-
-            scene.add(terrainScene);
-            _render();
-        });
-    });
-
-    // set up other world components
-    _terrainHelper2.default.getSkyDome(function (skyDome) {
-        scene.add(skyDome);
-        _render();
-    });
-    scene.add(_terrainHelper2.default.getWater());
-    scene.add(_terrainHelper2.default.getSunLight());
-    scene.add(_terrainHelper2.default.getSkyLight());
-
-    var _wireframeMat = new THREE.MeshBasicMaterial({ color: 0x5566aa, wireframe: true });
-
-    var $msg = (0, _jquery2.default)('#msg');
-    var toCoords = function toCoords(vec) {
-        var nFloats = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 3;
-
-        return '(' + vec.x.toFixed(nFloats) + ', ' + vec.y.toFixed(nFloats) + ', ' + vec.z.toFixed(nFloats) + ')';
-    };
-    var toCoordsArray = function toCoordsArray(vecArray) {
-        return vecArray.map(function (vec) {
-            return toCoords(vec);
-        }).join(', ');
-    };
-    var showLaserStats = function showLaserStats(laser) {
-        var refPoints = laser.getPoints();
-        var srcPt = refPoints.shift();
-        var infPt = refPoints.pop();
-        // console.log('refPoints:', refPoints);
-        $msg.empty();
-        if (refPoints.length > 0) {
-            $msg.append('<div>laser source: ' + toCoords(srcPt) + '</div>');
-            $msg.append('<div># reflections: ' + refPoints.length + '</div>');
-            $msg.append('<div>reflection points: ' + toCoordsArray(refPoints) + '</div>');
-            // $msg.append(`<div>reflection meshes: ${laser.getMeshesHit().map(mesh => mesh.uuid).join(', ')}</div>`);
-        }
-    };
-
-    console.log('scene:', scene);
-    return {
-        scene: scene,
-        render: _render,
-        pick: function pick(mx, my, cam) {
-            var isect = _laser.raycastFromCamera(mx, my, canvas.width, canvas.height, cam, meshesInteraction);
-            if (isect !== null) {
-                // console.log('isect:', isect);
-                var pt = isect.point;
-                // console.log('pt:', pt);
-
-                var color = guiData.color.replace("#", "0x");
-                if (1) {
-                    _laser.setSource(new THREE.Vector3(0.003, -0.004, 0.002), cam);
-                    _laser.pointWithRaytrace(pt, meshesInteraction, color, 16);
-                    var meshesHit = _laser.getMeshesHit();
-                    // console.log('meshesHit:', meshesHit);
-                    meshesHit.forEach(function (mesh) {
-                        if (mesh.name !== 'terrain') {
-                            mesh.material = _wireframeMat;
-                        }
-                    });
-                } else {
-                    _laser.point(pt, color);
-                }
-            } else {
-                // console.log('no isects');
-                _laser.clearPoints();
-            }
-            // = 1(src point) + #(reflection points) + 1(end point)
-            // console.log('#points:', _laser.getPoints().length);
-            showLaserStats(_laser);
-        },
-        clearPick: function clearPick() {
-            _laser.clearPoints();
-        }
-    };
-}(); // end of appData init
-
-var onChangeVis = function onChangeVis(value) {
-    console.log('vis:', value);
-    appData.scene.traverse(function (node) {
-        if (!node instanceof THREE.Mesh) return;
-
-        // console.log(node.name);
-        if (!node.name) return;
-
-        if (node.name === "terrain") {
-            node.material.wireframe = value === 'Wireframe';
-            node.material.needsUpdate = true;
-        }
-    });
-    appData.render();
-};
-
-var onChangeLaserMode = function onChangeLaserMode(value) {
-    //...
-};
-
-// begin render stuff
-var stats = new _stats2.default();
-stats.showPanel(1); // 0: fps, 1: ms, 2: mb, 3+: custom
-document.body.appendChild(stats.dom);
-var render = function render() {
-    stats.update();
-    resizeCanvasToDisplaySize();
-    appData.render();
-};
-
-var stopAnim = true;
-var animate = function animate() {
-    if (stopAnim) {
-        console.log('animate(): stopping');
-        return;
-    }
-    requestAnimationFrame(animate);
-    render();
-};
-var onChangeEvRender = function onChangeEvRender(value) {
-    if (value) {
-        console.log('onChangeEvRender(): stopping anim...');
-        stopAnim = true;
-    } else {
-        console.log('onChangeEvRender(): starting anim...');
-        stopAnim = false;
-        animate();
-    }
-};
-// end render stuff
-
-var Gui = function (_DatGuiDefaults) {
-    _inherits(Gui, _DatGuiDefaults);
-
-    function Gui() {
-        _classCallCheck(this, Gui);
-
-        return _possibleConstructorReturn(this, (Gui.__proto__ || Object.getPrototypeOf(Gui)).apply(this, arguments));
-    }
-
-    _createClass(Gui, [{
-        key: 'initGui',
-
-        // override
-        value: function initGui(gui, data, params) {
-            var _this2 = this;
-
-            var controller = void 0;
-
-            controller = gui.add(params, 'laserMode', ["Raytrace", "Measure", "None"]).name('Laser Mode');
-            controller.onChange(function (value) {
-                onChangeLaserMode(value);
-                data.laserMode = value;
-            });
-
-            controller = gui.addColor(params, 'color').name('Laser Color');
-            controller.onChange(function (value) {
-                // or onFinishChange
-                data.color = value;
-            });
-
-            controller = gui.add(params, 'vis', ["Textured", "Wireframe"]).name('Terrain');
-            controller.onChange(function (value) {
-                onChangeVis(value);
-                data.vis = value;
-            });
-
-            controller = gui.add(params, 'evRender').name('Passive Render');
-            controller.onChange(function (value) {
-                onChangeEvRender(value);
-                data.evRender = value;
-            });
-
-            controller = gui.add(params, 'reset').name("Reset");
-            controller.onChange(function (value) {
-                _this2.applyDefaults();
-                onChangeVis(params.vis);
-                onChangeLaserMode(params.laserMode);
-                onChangeEvRender(params.evRender);
-
-                Object.assign(data, params);
-            });
-
-            controller = gui.add(params, 'sourceCode').name("Source Code");
-            controller.onChange(function (value) {
-                window.location.href = "https://github.com/w3reality/three-laser-pointer/tree/master/examples/demo-terrains";
-            });
-        }
-    }]);
-
-    return Gui;
-}(_datGuiDefaults2.default);
-
-var guiData = { // defaults
-    vis: "Textured",
-    laserMode: "Raytrace",
-    color: "0x00ffff",
-    evRender: true
-};
-var dg = new Gui(guiData);
-dg.setDefaults({
-    vis: guiData.vis,
-    laserMode: guiData.laserMode,
-    color: guiData.color.replace("0x", "#"),
-    evRender: guiData.evRender,
-    reset: function reset() {},
-    sourceCode: function sourceCode() {}
-});
-// dg.gui.close();
-
-renderer.domElement.addEventListener('mousemove', function (e) {
-    if (guiData.laserMode !== 'None') {
-        // https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element/18053642#18053642
-        var rect = canvas.getBoundingClientRect();
-        var mx = e.clientX - rect.left;
-        var my = e.clientY - rect.top;
-        // console.log('mouse:', mx, my, canvas.width, canvas.height);
-        appData.pick(mx, my, camera);
-    } else {
-        appData.clearPick();
-    }
-
-    if (guiData.evRender) {
-        render();
-    }
-});
-
-if (guiData.evRender) {
-    render(); // first time
-    controls.addEventListener('change', render);
-}
-
-/***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -96971,210 +97021,6 @@ b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{do
 
 /***/ }),
 /* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-// assuming THREE is globally defined...
-
-
-__webpack_require__(6);
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-// console.log(THREE.Terrain);
-
-var TerrainHelper = function () {
-    function TerrainHelper() {
-        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-        _classCallCheck(this, TerrainHelper);
-
-        var defaults = {
-            xSize: 1.0,
-            ySize: 1.0,
-            maxHeight: 0.1,
-            minHeight: -0.1,
-            xS: 63,
-            yS: 63
-        };
-        var actual = Object.assign({}, defaults, options);
-        this.xSize = actual.xSize;
-        this.ySize = actual.ySize;
-        this.maxHeight = actual.maxHeight;
-        this.minHeight = actual.minHeight;
-        this.xS = actual.xS;
-        this.yS = actual.yS;
-    }
-
-    _createClass(TerrainHelper, [{
-        key: 'getTerrainScene',
-        value: function getTerrainScene(mat) {
-            var img = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : THREE.Terrain.DiamondSquare;
-
-            return THREE.Terrain({
-                easing: THREE.Terrain.Linear,
-                frequency: 2.5, //????
-                heightmap: img,
-                // material: new THREE.MeshBasicMaterial({color: 0x5566aa}),
-                // material: new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true}), // wireframe
-                // material: new THREE.MeshPhongMaterial({color: 0x88aaaa, specular: 0x444455, shininess: 10}), // gray
-                material: mat,
-                steps: 1,
-                useBufferGeometry: false, // need false for import/export according to the doc...
-                xSize: this.xSize,
-                ySize: this.ySize,
-                maxHeight: this.maxHeight,
-                minHeight: this.minHeight,
-                xSegments: this.xS,
-                ySegments: this.yS
-            });
-        }
-    }, {
-        key: 'getScatterMeshesScene',
-        value: function getScatterMeshesScene(terrainGeom) {
-            var merge = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-            var mag = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0.001;
-            var spread = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.02;
-
-            // const _mesh = new THREE.Mesh(new THREE.CylinderGeometry(10*mag, 10*mag, 60*mag, 30*mag));
-            var _mesh = TerrainHelper.buildTree(mag);
-
-            if (!merge) {
-                // Kludge -
-                // Here we want to track indivisual scattered meshes.
-                // THREE.Terrain.ScatterMeshes() does not merge meshes when
-                // the geometry is THREE.Geometry.  So convert to THREE.BufferGeometry.
-                _mesh.geometry = new THREE.BufferGeometry().fromGeometry(_mesh.geometry);
-            }
-            return {
-                scene: THREE.Terrain.ScatterMeshes(terrainGeom, {
-                    mesh: _mesh,
-                    w: this.xS,
-                    h: this.yS,
-                    spread: spread,
-                    randomness: Math.random
-                }),
-                material: _mesh.material
-            };
-        }
-    }], [{
-        key: 'loadHeightmapImage',
-        value: function loadHeightmapImage(src, cb) {
-            var img = new Image();
-            img.onload = function () {
-                cb(img);
-            };
-            img.src = src;
-        }
-    }, {
-        key: 'getBlendedMaterial',
-        value: function getBlendedMaterial() {
-            var cb = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-            var mag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0.01;
-
-            var loader = new THREE.TextureLoader();
-            loader.load('./sand1.jpg', function (t1) {
-                t1.wrapS = t1.wrapT = THREE.RepeatWrapping;
-                loader.load('./grass1.jpg', function (t2) {
-                    loader.load('./stone1.jpg', function (t3) {
-                        loader.load('./snow1.jpg', function (t4) {
-                            // t2.repeat.x = t2.repeat.y = 2;
-                            var blend = THREE.Terrain.generateBlendedMaterial([{ texture: t1 }, { texture: t2, levels: [-80 * mag, -35 * mag, 20 * mag, 50 * mag] }, { texture: t3, levels: [20 * mag, 50 * mag, 60 * mag, 85 * mag] }, { texture: t4, glsl: '1.0 - smoothstep(' + 65.0 * mag + ' + smoothstep(-256.0, 256.0, vPosition.x) * ' + 10.0 * mag + ', ' + 80.0 * mag + ', vPosition.z)' }, { texture: t3, glsl: 'slope > 0.7853981633974483 ? 0.2 : 1.0 - smoothstep(0.47123889803846897, 0.7853981633974483, slope) + 0.2' }] // between 27 and 45 degrees
-                            );
-                            // console.log('blend:', blend);
-                            cb(blend);
-                        });
-                    });
-                });
-            });
-        }
-    }, {
-        key: 'buildTree',
-        value: function buildTree() {
-            var mag = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0.001;
-
-            var material = [new THREE.MeshLambertMaterial({ color: 0x3d2817 }), // brown
-            new THREE.MeshLambertMaterial({ color: 0x2d4c1e })];
-            var c0 = new THREE.Mesh(new THREE.CylinderGeometry(2 * mag, 2 * mag, 12 * mag, 6 * mag, 1 * mag, true));
-            c0.position.y = 6 * mag;
-            var c1 = new THREE.Mesh(new THREE.CylinderGeometry(0 * mag, 10 * mag, 14 * mag, 8 * mag));
-            c1.position.y = 18 * mag;
-            var c2 = new THREE.Mesh(new THREE.CylinderGeometry(0 * mag, 9 * mag, 13 * mag, 8 * mag));
-            c2.position.y = 25 * mag;
-            var c3 = new THREE.Mesh(new THREE.CylinderGeometry(0 * mag, 8 * mag, 12 * mag, 8 * mag));
-            c3.position.y = 32 * mag;
-
-            var g = new THREE.Geometry();
-            c0.updateMatrix();
-            c1.updateMatrix();
-            c2.updateMatrix();
-            c3.updateMatrix();
-            g.merge(c0.geometry, c0.matrix);
-            g.merge(c1.geometry, c1.matrix);
-            g.merge(c2.geometry, c2.matrix);
-            g.merge(c3.geometry, c3.matrix);
-
-            var b = c0.geometry.faces.length;
-            for (var i = 0, l = g.faces.length; i < l; i++) {
-                g.faces[i].materialIndex = i < b ? 0 : 1;
-            }
-
-            var m = new THREE.Mesh(g, material);
-            m.scale.x = m.scale.z = 5;
-            m.scale.y = 1.25;
-            return m;
-        }
-    }, {
-        key: 'getSkyDome',
-        value: function getSkyDome(cb) {
-            new THREE.TextureLoader().load('./sky1.jpg', function (t1) {
-                t1.minFilter = THREE.LinearFilter; // Texture is not a power-of-two size; use smoother interpolation.
-                var skyDome = new THREE.Mesh(new THREE.SphereGeometry(8192, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), new THREE.MeshBasicMaterial({ map: t1, side: THREE.BackSide, fog: false }));
-                // skyDome.position.y = -99;
-                skyDome.position.y = -0.99;
-                cb(skyDome);
-            });
-        }
-    }, {
-        key: 'getWater',
-        value: function getWater() {
-            var water = new THREE.Mesh(new THREE.PlaneBufferGeometry(16384 + 1024, 16384 + 1024, 16, 16), new THREE.MeshLambertMaterial({ color: 0x006ba0, transparent: true, opacity: 0.6 }));
-            // water.position.y = -99;
-            water.position.y = -0.99;
-            water.rotation.x = -0.5 * Math.PI;
-            return water;
-        }
-    }, {
-        key: 'getSunLight',
-        value: function getSunLight() {
-            var sunLight = new THREE.DirectionalLight(0xe8bdb0, 1.5);
-            sunLight.position.set(2950, 2625, -160); // Sun on the sky texture
-            return sunLight;
-        }
-    }, {
-        key: 'getSkyLight',
-        value: function getSkyLight() {
-            var skyLight = new THREE.DirectionalLight(0xc3eaff, 0.75);
-            skyLight.position.set(-1, -0.5, -1);
-            return skyLight;
-        }
-    }]);
-
-    return TerrainHelper;
-}();
-
-exports.default = TerrainHelper;
-module.exports = exports['default'];
-
-/***/ }),
-/* 6 */
 /***/ (function(module, exports) {
 
 /**
@@ -97189,12 +97035,12 @@ module.exports = exports['default'];
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(1);
 
 
 /**
@@ -98241,12 +98087,12 @@ Object.defineProperties( __WEBPACK_IMPORTED_MODULE_0_three__["OrbitControls"].pr
 
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(1);
 
 
 /**
@@ -99047,12 +98893,12 @@ __WEBPACK_IMPORTED_MODULE_0_three__["OBJLoader"] = ( function () {
 
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(1);
 
 
 /**
@@ -99619,12 +99465,12 @@ __WEBPACK_IMPORTED_MODULE_0_three__["MTLLoader"].MaterialCreator.prototype = {
 
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_three__ = __webpack_require__(1);
 
 
 /*
@@ -99902,7 +99748,7 @@ __WEBPACK_IMPORTED_MODULE_0_three__["DDSLoader"].parse = function ( buffer, load
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -99911,7 +99757,7 @@ __WEBPACK_IMPORTED_MODULE_0_three__["DDSLoader"].parse = function ( buffer, load
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 (function webpackUniversalModuleDefinition(root, factory) {
-    if (( false ? 'undefined' : _typeof(exports)) === 'object' && ( false ? 'undefined' : _typeof(module)) === 'object') module.exports = factory(__webpack_require__(1));else if (true) !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(1)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
+    if (( false ? 'undefined' : _typeof(exports)) === 'object' && ( false ? 'undefined' : _typeof(module)) === 'object') module.exports = factory(__webpack_require__(2));else if (true) !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(2)], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
 				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
 				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));else if ((typeof exports === 'undefined' ? 'undefined' : _typeof(exports)) === 'object') exports["LaserPointer"] = factory(require("THREE"));else root["LaserPointer"] = factory(root["THREE"]);
@@ -100151,6 +99997,31 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                         }
                         return positions;
                     }
+                }, {
+                    key: 'flattenPoints',
+                    value: function flattenPoints(arrPoints) {
+                        return arrPoints.map(function (pt) {
+                            return [pt.x, pt.y, pt.z];
+                        }).reduce(function (acc, ele) {
+                            return acc.concat(ele);
+                        });
+                    }
+                    // https://stackoverflow.com/questions/10014271/generate-random-color-distinguishable-to-humans
+                    // var color = selectColor(Math.floor(Math.random() * 10), 10);
+                    // var color = selectColor(Math.floor(Math.random() * 999), 10);
+                    // var color = selectColor(8, 13);
+
+                }, {
+                    key: '_selectColor',
+                    value: function _selectColor(colorNum, colors) {
+                        if (colors < 1) colors = 1; // defaults to one color - avoid divide by zero
+                        return "hsl(" + colorNum * (360 / colors) % 360 + ",100%,50%)";
+                    }
+                }, {
+                    key: 'selectColorRandom',
+                    value: function selectColorRandom() {
+                        this._selectColor();
+                    }
                 }]);
 
                 return Line;
@@ -100366,10 +100237,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     );
 });
 //# sourceMappingURL=three-laser-pointer.js.map
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(12)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(11)(module)))
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -100395,6 +100266,210 @@ module.exports = function(module) {
 	return module;
 };
 
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+// assuming THREE is globally defined...
+
+
+__webpack_require__(5);
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+// console.log(THREE.Terrain);
+
+var TerrainHelper = function () {
+    function TerrainHelper() {
+        var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+        _classCallCheck(this, TerrainHelper);
+
+        var defaults = {
+            xSize: 1.0,
+            ySize: 1.0,
+            maxHeight: 0.1,
+            minHeight: -0.1,
+            xS: 63,
+            yS: 63
+        };
+        var actual = Object.assign({}, defaults, options);
+        this.xSize = actual.xSize;
+        this.ySize = actual.ySize;
+        this.maxHeight = actual.maxHeight;
+        this.minHeight = actual.minHeight;
+        this.xS = actual.xS;
+        this.yS = actual.yS;
+    }
+
+    _createClass(TerrainHelper, [{
+        key: 'getTerrainScene',
+        value: function getTerrainScene(mat) {
+            var img = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : THREE.Terrain.DiamondSquare;
+
+            return THREE.Terrain({
+                easing: THREE.Terrain.Linear,
+                frequency: 2.5, //????
+                heightmap: img,
+                // material: new THREE.MeshBasicMaterial({color: 0x5566aa}),
+                // material: new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true}), // wireframe
+                // material: new THREE.MeshPhongMaterial({color: 0x88aaaa, specular: 0x444455, shininess: 10}), // gray
+                material: mat,
+                steps: 1,
+                useBufferGeometry: false, // need false for import/export according to the doc...
+                xSize: this.xSize,
+                ySize: this.ySize,
+                maxHeight: this.maxHeight,
+                minHeight: this.minHeight,
+                xSegments: this.xS,
+                ySegments: this.yS
+            });
+        }
+    }, {
+        key: 'getScatterMeshesScene',
+        value: function getScatterMeshesScene(terrainGeom) {
+            var merge = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+            var mag = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0.001;
+            var spread = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0.02;
+
+            // const _mesh = new THREE.Mesh(new THREE.CylinderGeometry(10*mag, 10*mag, 60*mag, 30*mag));
+            var _mesh = TerrainHelper.buildTree(mag);
+
+            if (!merge) {
+                // Kludge -
+                // Here we want to track indivisual scattered meshes.
+                // THREE.Terrain.ScatterMeshes() does not merge meshes when
+                // the geometry is THREE.Geometry.  So convert to THREE.BufferGeometry.
+                _mesh.geometry = new THREE.BufferGeometry().fromGeometry(_mesh.geometry);
+            }
+            return {
+                scene: THREE.Terrain.ScatterMeshes(terrainGeom, {
+                    mesh: _mesh,
+                    w: this.xS,
+                    h: this.yS,
+                    spread: spread,
+                    randomness: Math.random
+                }),
+                material: _mesh.material
+            };
+        }
+    }], [{
+        key: 'loadHeightmapImage',
+        value: function loadHeightmapImage(src, cb) {
+            var img = new Image();
+            img.onload = function () {
+                cb(img);
+            };
+            img.src = src;
+        }
+    }, {
+        key: 'getBlendedMaterial',
+        value: function getBlendedMaterial() {
+            var cb = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+            var mag = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0.01;
+
+            var loader = new THREE.TextureLoader();
+            loader.load('./sand1.jpg', function (t1) {
+                t1.wrapS = t1.wrapT = THREE.RepeatWrapping;
+                loader.load('./grass1.jpg', function (t2) {
+                    loader.load('./stone1.jpg', function (t3) {
+                        loader.load('./snow1.jpg', function (t4) {
+                            // t2.repeat.x = t2.repeat.y = 2;
+                            var blend = THREE.Terrain.generateBlendedMaterial([{ texture: t1 }, { texture: t2, levels: [-80 * mag, -35 * mag, 20 * mag, 50 * mag] }, { texture: t3, levels: [20 * mag, 50 * mag, 60 * mag, 85 * mag] }, { texture: t4, glsl: '1.0 - smoothstep(' + 65.0 * mag + ' + smoothstep(-256.0, 256.0, vPosition.x) * ' + 10.0 * mag + ', ' + 80.0 * mag + ', vPosition.z)' }, { texture: t3, glsl: 'slope > 0.7853981633974483 ? 0.2 : 1.0 - smoothstep(0.47123889803846897, 0.7853981633974483, slope) + 0.2' }] // between 27 and 45 degrees
+                            );
+                            // console.log('blend:', blend);
+                            cb(blend);
+                        });
+                    });
+                });
+            });
+        }
+    }, {
+        key: 'buildTree',
+        value: function buildTree() {
+            var mag = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0.001;
+
+            var material = [new THREE.MeshLambertMaterial({ color: 0x3d2817 }), // brown
+            new THREE.MeshLambertMaterial({ color: 0x2d4c1e })];
+            var c0 = new THREE.Mesh(new THREE.CylinderGeometry(2 * mag, 2 * mag, 12 * mag, 6 * mag, 1 * mag, true));
+            c0.position.y = 6 * mag;
+            var c1 = new THREE.Mesh(new THREE.CylinderGeometry(0 * mag, 10 * mag, 14 * mag, 8 * mag));
+            c1.position.y = 18 * mag;
+            var c2 = new THREE.Mesh(new THREE.CylinderGeometry(0 * mag, 9 * mag, 13 * mag, 8 * mag));
+            c2.position.y = 25 * mag;
+            var c3 = new THREE.Mesh(new THREE.CylinderGeometry(0 * mag, 8 * mag, 12 * mag, 8 * mag));
+            c3.position.y = 32 * mag;
+
+            var g = new THREE.Geometry();
+            c0.updateMatrix();
+            c1.updateMatrix();
+            c2.updateMatrix();
+            c3.updateMatrix();
+            g.merge(c0.geometry, c0.matrix);
+            g.merge(c1.geometry, c1.matrix);
+            g.merge(c2.geometry, c2.matrix);
+            g.merge(c3.geometry, c3.matrix);
+
+            var b = c0.geometry.faces.length;
+            for (var i = 0, l = g.faces.length; i < l; i++) {
+                g.faces[i].materialIndex = i < b ? 0 : 1;
+            }
+
+            var m = new THREE.Mesh(g, material);
+            m.scale.x = m.scale.z = 5;
+            m.scale.y = 1.25;
+            return m;
+        }
+    }, {
+        key: 'getSkyDome',
+        value: function getSkyDome(cb) {
+            new THREE.TextureLoader().load('./sky1.jpg', function (t1) {
+                t1.minFilter = THREE.LinearFilter; // Texture is not a power-of-two size; use smoother interpolation.
+                var skyDome = new THREE.Mesh(new THREE.SphereGeometry(8192, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5), new THREE.MeshBasicMaterial({ map: t1, side: THREE.BackSide, fog: false }));
+                // skyDome.position.y = -99;
+                skyDome.position.y = -0.99;
+                cb(skyDome);
+            });
+        }
+    }, {
+        key: 'getWater',
+        value: function getWater() {
+            var water = new THREE.Mesh(new THREE.PlaneBufferGeometry(16384 + 1024, 16384 + 1024, 16, 16), new THREE.MeshLambertMaterial({ color: 0x006ba0, transparent: true, opacity: 0.6 }));
+            // water.position.y = -99;
+            water.position.y = -0.99;
+            water.rotation.x = -0.5 * Math.PI;
+            return water;
+        }
+    }, {
+        key: 'getSunLight',
+        value: function getSunLight() {
+            var sunLight = new THREE.DirectionalLight(0xe8bdb0, 1.5);
+            sunLight.position.set(2950, 2625, -160); // Sun on the sky texture
+            return sunLight;
+        }
+    }, {
+        key: 'getSkyLight',
+        value: function getSkyLight() {
+            var skyLight = new THREE.DirectionalLight(0xc3eaff, 0.75);
+            skyLight.position.set(-1, -0.5, -1);
+            return skyLight;
+        }
+    }]);
+
+    return TerrainHelper;
+}();
+
+exports.default = TerrainHelper;
+module.exports = exports['default'];
 
 /***/ }),
 /* 13 */
