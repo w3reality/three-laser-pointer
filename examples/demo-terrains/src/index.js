@@ -164,9 +164,6 @@ const appData = (() => {
         }
     };
 
-    const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-    const getRandomColor = () => 65536 * getRandomInt(0, 255) +
-        256 * getRandomInt(0, 255) + getRandomInt(0, 255);
     const _laserMarkTmp = new LaserPointer.Laser({maxPoints: 2});
     scene.add(_laserMarkTmp);
     let markPair = null;
@@ -197,7 +194,8 @@ const appData = (() => {
                     markPair = null;
                 } else {
                     markPair = [pt,];
-                    _laserMarkColor = getRandomColor();
+                    // get a new random color
+                    _laserMarkColor = Math.floor(0xffffff * Math.random());
                     console.log('new color:', _laserMarkColor);
                 }
                 // console.log('markPair:', markPair);
@@ -206,7 +204,8 @@ const appData = (() => {
             if (guiData.evRender) {
                 render();
             }
-            // showMeasureStats(_laser);
+            // TODO right mouse click to cancel!!!!!!!!!
+            // TODO showMeasureStats(_laser);
         },
         pick: (mx, my) => {
             if (guiData.laserMode === 'None') {
