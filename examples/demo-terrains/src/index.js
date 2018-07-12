@@ -150,7 +150,7 @@ const appData = (() => {
     const toCoordsArray = vecArray => {
         return vecArray.map(vec => toCoords(vec)).join(', ');
     };
-    const showLaserStats = (laser) => {
+    const showRaytraceStats = (laser) => {
         let refPoints = laser.getPoints();
         let srcPt = refPoints.shift();
         let infPt = refPoints.pop();
@@ -163,10 +163,20 @@ const appData = (() => {
             // $msg.append(`<div>reflection meshes: ${laser.getMeshesHit().map(mesh => mesh.uuid).join(', ')}</div>`);
         }
     };
+    const showMeasureStats = (markPair) => {
+        $msg.empty();
+        if (markPair.length === 1) {
+            $msg.append(`<div>points: ${toCoords(markPair[0])} -> </div>`);
+        } else if (markPair.length === 2) {
+            let [p0, p1] = markPair;
+            $msg.append(`<div>points: ${toCoords(p0)} -> ${toCoords(p1)}</div>`);
+            $msg.append(`<div>length: ${p0.distanceTo(p1).toFixed(3)}</div>`);
+        }
+    };
 
     const _laserMarkTmp = new LaserPointer.Laser({maxPoints: 2});
     scene.add(_laserMarkTmp);
-    let markPair = null;
+    let markPair = []; // now markPair.length === 0
     let _laserMarkColor;
 
     console.log('scene:', scene);
@@ -182,8 +192,8 @@ const appData = (() => {
                 // console.log('isect:', isect);
                 let pt = isect.point;
                 console.log('mark pt:', pt);
-                if (markPair) {
-                    markPair.push(pt);
+                if (markPair.length === 1) {
+                    markPair.push(pt); // now markPair.length === 2
                     // console.log('registering markPair:', markPair);
                     let laser = new LaserPointer.Laser({
                         maxPoints: 2,
@@ -191,9 +201,8 @@ const appData = (() => {
                     });
                     laser.updatePoints(markPair);
                     scene.add(laser);
-                    markPair = null;
-                } else {
-                    markPair = [pt,];
+                } else { // when markPair.length === 0 or 2
+                    markPair = [pt,]; // now markPair.length === 1
                     // get a new random color
                     _laserMarkColor = Math.floor(0xffffff * Math.random());
                     console.log('new color:', _laserMarkColor);
@@ -201,11 +210,16 @@ const appData = (() => {
                 // console.log('markPair:', markPair);
             }
 
-            if (guiData.evRender) {
-                render();
-            }
-            // TODO right mouse click to cancel!!!!!!!!!
-            // TODO showMeasureStats(_laser);
+            if (guiData.evRender) render();
+
+            showMeasureStats(markPair);
+        },
+        markCancel: () => {
+            markPair = []; // now markPair.length === 0
+            showMeasureStats(markPair);
+
+            _laserMarkTmp.visible = false;
+            if (guiData.evRender) render();
         },
         pick: (mx, my) => {
             if (guiData.laserMode === 'None') {
@@ -236,7 +250,7 @@ const appData = (() => {
                     _laser.setSource(ptSrc, camera);
                     _laser.point(pt, 0xffffff);
 
-                    if (markPair) {
+                    if (markPair.length === 1) {
                         _laserMarkTmp.setSource(markPair[0]);
                         _laserMarkTmp.point(pt, _laserMarkColor);
                         _laserMarkTmp.visible = true;
@@ -249,12 +263,11 @@ const appData = (() => {
                 _laser.clearPoints();
             }
 
-            if (guiData.evRender) {
-                render();
-            }
+            if (guiData.evRender) render();
+
             // = 1(src point) + #(reflection points) + 1(end point)
             // console.log('#points:', _laser.getPoints().length);
-            showLaserStats(_laser);
+            if (guiData.laserMode === "Raytrace") showRaytraceStats(_laser);
         },
     };
 })(); // end of appData init
@@ -407,13 +420,18 @@ renderer.domElement.addEventListener("mousemove", e => {
     appData.pick(coords[0], coords[1]);
 }, false);
 renderer.domElement.addEventListener("mouseup", e => {
+    // console.log('e:', e);
     if (isDragging) {
         console.log("mouseup: drag");
         // nop
     } else {
         console.log("mouseup: click");
-        let coords = getMouseCoords(e);
-        appData.mark(coords[0], coords[1]);
+        if (e.button === 0) {
+            let coords = getMouseCoords(e);
+            appData.mark(coords[0], coords[1]);
+        } else if (e.button === 2) {
+            appData.markCancel();
+        }
     }
 }, false);
 
