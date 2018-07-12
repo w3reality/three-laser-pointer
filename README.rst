@@ -1,6 +1,7 @@
 three-laser-pointer
 ===================
 
+[DRAFT]
 
 Laser object for three.js
 
@@ -16,7 +17,7 @@ Demo 2: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/d
 Demos
 -----
 
-dddddddd
+zzzzzzzzzzzz
 
 Setup
 -----
@@ -33,6 +34,7 @@ Via script tags: use ``LaserPointer.Laser`` after
 
 .. code::
 
+   <script src="three.min.js"></script>
    <script src="dist/three-laser-pointer.min.js"></script>
 
 Via the ES6 module system: use ``Laser`` after
@@ -116,7 +118,7 @@ API
      
 - **updatePoints(arr, isFlatten=false)**
 
-  - ``arr`` **Array<THREE.Vector3 | Array<number>>**
+  - ``arr`` **Array<THREE.Vector3 | number>**
   - ``isFlatten`` **boolean**
 
 - **clearPoints()**
