@@ -11,8 +11,10 @@ import MTLLoader from 'three-es6-plugin/es6/MTLLoader';
 import DDSLoader from 'three-es6-plugin/es6/DDSLoader';
 
 // import LaserPointer from '../../../dist/three-laser-pointer.min'; // for prod
-import LaserPointer from '../../../lib/three-laser-pointer'; // for dev
-console.log('LaserPointer:', LaserPointer);
+// import LaserPointer from '../../../lib/three-laser-pointer'; // for dev
+// console.log('LaserPointer:', LaserPointer);
+import { Laser } from '../../../lib/three-laser-pointer'; // for dev
+console.log('Laser:', Laser);
 
 import $ from 'jquery';
 // console.log('$:', $);
@@ -83,13 +85,16 @@ const appData = (() => {
     scene.add(walls);
 
     //======== add laser
-    if (0) { // yellow thunder
-        const _line = new LaserPointer.Line(32, 0xffff00);
+    if (0) { // test yellow "thunder"
+        const _line = new Laser({
+            color: 0xffff00,
+            maxPoints: 32,
+        });
         _line.updatePointsRandomWalk(32);
         scene.add(_line);
     }
 
-    const _laser = new LaserPointer.Laser({
+    const _laser = new Laser({
         color: 0xff0000,
     });
     scene.add(_laser);
@@ -174,7 +179,7 @@ const appData = (() => {
         }
     };
 
-    const _laserMarkTmp = new LaserPointer.Laser({maxPoints: 2});
+    const _laserMarkTmp = new Laser({maxPoints: 2});
     scene.add(_laserMarkTmp);
     let markPair = []; // now markPair.length === 0
     let _laserMarkColor;
@@ -195,7 +200,7 @@ const appData = (() => {
                 if (markPair.length === 1) {
                     markPair.push(pt); // now markPair.length === 2
                     // console.log('registering markPair:', markPair);
-                    let laser = new LaserPointer.Laser({
+                    let laser = new Laser({
                         maxPoints: 2,
                         color: _laserMarkColor,
                     });
