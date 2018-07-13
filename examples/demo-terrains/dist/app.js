@@ -94336,8 +94336,8 @@ var Gui = function (_DatGuiDefaults) {
 
 var guiData = { // defaults
     vis: "Textured",
-    // laserMode: "Raytrace",
-    laserMode: "Measure",
+    laserMode: "Raytrace",
+    // laserMode: "Measure",
     // color: "0x00ffff",
     evRender: true
 };
