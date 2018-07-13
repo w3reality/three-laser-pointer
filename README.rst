@@ -9,16 +9,11 @@ Demo 1: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.
 
 Demo 2: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html
 
-.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser.png
-   :width: 640
-..
-   :target: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
+.. raw:: html
 
-.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/refs-1.jpg
-   :width: 320
-.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure.jpg
-   :width: 320
-
+    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser-0.jpg" width="320">
+    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/refs-1.jpg" width="320">
+    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure.jpg" width="320">
 
 
 Demo
