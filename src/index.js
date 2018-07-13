@@ -121,7 +121,7 @@ class Laser extends Line {
         let isects = this._raycaster.intersectObjects(meshes, recursive);
         if (faceExclude) {
             for (let i = 0; i < isects.length; i++) {
-                if (isects[i].face != faceExclude) {
+                if (isects[i].face !== faceExclude) {
                     return isects[i];
                 }
             }
@@ -133,14 +133,14 @@ class Laser extends Line {
         this._raycaster.set(origin, direction);
         return this._raycast(meshes, false, faceExclude);
     }
-    raycastFromCamera(mx, my, width, height, cam, meshes, recursive=false) {
+    raycastFromCamera(mx, my, width, height, cam, meshes) {
         let mouse = new THREE.Vector2( // normalized (-1 to +1)
             (mx / width) * 2 - 1,
             - (my / height) * 2 + 1);
         // https://threejs.org/docs/#api/core/Raycaster
         // update the picking ray with the camera and mouse position
         this._raycaster.setFromCamera(mouse, cam);
-        return this._raycast(meshes, recursive, null);
+        return this._raycast(meshes, false, null);
     }
     getMeshesHit() {
         return this._meshes;

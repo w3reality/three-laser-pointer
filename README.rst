@@ -85,7 +85,13 @@ Usage
 API
 ---
 
-- **constructor(xxxxxxxxxxxx)**
+**Laser**
+
+- **constructor(options={})**
+
+  - ``options.color`` **number** 0xff0000
+  - ``options.maxPoints`` **number** 256
+  - ``options.infLength`` **number** 9999
 
 - **setSource(src, camera=null)**
 
@@ -98,15 +104,15 @@ API
 
 - **point(pt, color=null)**
 
-  - ``x``
-  - ``x``
+  - ``pt`` **THREE.Vector3**
+  - ``color`` **number**
 
 - **pointWithRaytrace(pt, meshes=[], color=null, maxReflect=16)**
 
-  - ``x``
-  - ``x``
-  - ``x``
-  - ``x``
+  - ``pt`` **THREE.Vector3**
+  - ``meshes`` **Array<THREE.Mesh>**
+  - ``color`` **number**
+  - ``maxReflect`` **number**
 
 - **getPoints()**
 
@@ -114,7 +120,7 @@ API
 
 - **getMeshesHit()**
 
-  Returns
+  Returns **Array<THREE.Mesh>**
      
 - **updatePoints(arr, isFlatten=false)**
 
@@ -125,22 +131,23 @@ API
 
   aaaaaaaa
 
-- **static flattenPoints(arrPoints)**
+- **static flattenPoints(arr)**
 
-  - ``arrPoints`` **Array<THREE.Vector3>**
+  - ``arr`` **Array<THREE.Vector3>**
 
   Returns **Array<number>**
 
-- **raycastFromCamera(mx, my, width, height, cam, meshes, recursive=false)**
+- **raycastFromCamera(mx, my, width, height, cam, meshes)**
 
-  - ``x``
-  - ``x``
-  - ``x``
-  - ``x``
-  - ``x``
-  - ``x``
-  - ``x``
-    
+  - ``mx`` **number**
+  - ``my`` **number**
+  - ``width`` **number**
+  - ``height`` **number**
+  - ``cam`` **THREE.PerspectiveCamera**
+  - ``meshes`` **Array<THREE.Mesh>**
+
+  Returns **Array<Object>** threejs intersect objects
+
 - **setColor(color)**
 
   - ``color`` **number** jjjjj
