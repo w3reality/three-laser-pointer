@@ -54,7 +54,7 @@ Usage
     var laser = new Laser({color: 0xff0000});
     scene.add(laser);
 
-    var pt = new THREE.Vector3(0, 0, -1); // the target point
+    var pt = new THREE.Vector3(0, 0, -1); // the target point to shoot
 
     // set the source point relative to the camera
     // with offset (0.3, -0.4, -0.2)
@@ -63,7 +63,7 @@ Usage
     // shoot the target from the source point
     laser.point(pt);
 
-- VR-like laser pointing with raytracing against THREE.Mesh objects in the scene:
+- VR-like laser pointing with raytrace enabled against THREE.Mesh objects in the scene:
     
 .. code::
 
@@ -71,7 +71,7 @@ Usage
     var laser = new Laser({color: 0x00ff00});
     scene.add(laser);
 
-    var pt = new THREE.Vector3(0, 0, 1); // the target point
+    var pt = new THREE.Vector3(0, 0, 1); // the target point to shoot
 
     // prepare an array of THREE.Mesh objects that interact with the laser
     var meshes = [...];
@@ -79,7 +79,7 @@ Usage
     // set the source point relative to the camera
     laser.setSource(new THREE.Vector3(0.3, -0.4, -0.2), camera);
 
-    // shoot the target and raytrace against the meshes in the scene
+    // shoot the target with raytrace considering the meshes in the scene
     laser.pointWithRaytrace(pt, meshes);
 
 API
@@ -91,7 +91,7 @@ API
 
   Create a laser object with optional parameters.  For example,
   ``new Laser({color: 0x00ff00, maxPoints: 16})`` creates a green laser object
-  that consists of maximally 15 (=16-1) line segments.
+  that can maximally consist of 15 (=16-1) line segments.
 
   - ``options.color``\=0xff0000 **number (integer)** An integer (0x000000 - 0xffffff) encoding an RGB color.
   - ``options.maxPoints``\=256 **number (integer)** The max number of 3D points that consist of the laser.
@@ -109,13 +109,13 @@ API
 - **getSource()**
 
   Returns a new vector instance with values corresponding to the current source
-  point set.
+  point.
   
   Returns **THREE.Vector3**
 
 - **point(pt, color=null)**
 
-  Shoot ``pt`` by the laser rendering a line segment between the source point
+  Shoot ``pt`` by the laser rendering a line segment connecting the source point
   of the laser and ``pt``.  Optionally, ``color`` can be specified.
   
   - ``pt`` **THREE.Vector3** The target point to shoot.
@@ -123,10 +123,11 @@ API
 
 - **pointWithRaytrace(pt, meshes=[], color=null, maxReflect=16)**
 
-  Shoot ``pt`` by the laser with raytracing enabled.  Ray reflections by
-  provided ``meshes`` are computed and rendered up to ``maxReflect`` times.
+  Shoot ``pt`` by the laser with raytracing enabled.  Up to ``maxReflect``
+  times, ray reflections by provided ``meshes`` are computed and rendered.
   (Note: regardless of ``maxReflect``, the number of reflections is also
-  bounded less than or equal to ``maxPoints-2``.)
+  bounded less than or equal to ``maxPoints-2``.  ``maxPoints`` can be adjusted
+  when creating a laser object.)
   
 
   - ``pt`` **THREE.Vector3** The target point to shoot.
@@ -136,7 +137,7 @@ API
 
 - **getPoints()**
 
-  Get an array of the points (copied) that consist of the laser.
+  Get an array of the (copied) points that consist of the laser.
   
   Returns **Array<THREE.Vector3>** 
 
@@ -158,12 +159,12 @@ API
 
 - **clearPoints()**
 
-  Clear the points that consist of the laser.  Thereafter, ``getPoints()``
-  will return ``[]``.
+  Clear the points that consist of the laser.  (Thereafter, ``getPoints()``
+  will return ``[]``.)
 
 - **raycastFromCamera(mx, my, width, height, camera, meshes)**
 
-  A utility method that casts a mouse ray to ``meshes`` provided.  If there are
+  A utility method that casts a mouse-ray to ``meshes`` provided.  If there are
   intersects, it returns the nearest intersect from the camera.  Otherwise, it
   returns ``null``.
   

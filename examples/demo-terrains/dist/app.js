@@ -100298,7 +100298,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                     var defaults = {
                         color: 0xff0000,
                         maxPoints: 256,
-                        infLength: 9999
+                        infLength: 9999.0
                     };
                     var actual = Object.assign({}, defaults, options);
 
@@ -100330,7 +100330,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                         var isects = this._raycaster.intersectObjects(meshes, recursive);
                         if (faceExclude) {
                             for (var i = 0; i < isects.length; i++) {
-                                if (isects[i].face != faceExclude) {
+                                if (isects[i].face !== faceExclude) {
                                     return isects[i];
                                 }
                             }
@@ -100349,14 +100349,12 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                 }, {
                     key: 'raycastFromCamera',
                     value: function raycastFromCamera(mx, my, width, height, cam, meshes) {
-                        var recursive = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : false;
-
                         var mouse = new THREE.Vector2( // normalized (-1 to +1)
                         mx / width * 2 - 1, -(my / height) * 2 + 1);
                         // https://threejs.org/docs/#api/core/Raycaster
                         // update the picking ray with the camera and mouse position
                         this._raycaster.setFromCamera(mouse, cam);
-                        return this._raycast(meshes, recursive, null);
+                        return this._raycast(meshes, false, null);
                     }
                 }, {
                     key: 'getMeshesHit',

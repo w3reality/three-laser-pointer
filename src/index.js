@@ -93,7 +93,7 @@ class Laser extends Line {
         let defaults = {
             color: 0xff0000,
             maxPoints: 256,
-            infLength: 9999,
+            infLength: 9999.0,
         };
         let actual = Object.assign({}, defaults, options);
         super(actual.maxPoints, actual.color);
