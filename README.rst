@@ -3,16 +3,23 @@ three-laser-pointer
 
 [DRAFT]
 
-Laser object for three.js
+Laser pointer object using three.js
 
 Demo 1: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
 
 Demo 2: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html
 
-.. image:: 000https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser.png
-   :target: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
-..
+.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser.png
    :width: 640
+..
+   :target: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
+
+.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/refs-1.jpg
+   :width: 320
+.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure.jpg
+   :width: 320
+
+
 
 Demo
 ----
@@ -46,7 +53,7 @@ Via the ES6 module system: use ``Laser`` after
 Usage
 -----
 
-- VR-like laser pointing:
+- VR-like laser pointing
 
 .. code::
 
@@ -63,7 +70,7 @@ Usage
     // shoot the target from the source point
     laser.point(pt);
 
-- VR-like laser pointing with raytrace enabled against THREE.Mesh objects in the scene:
+- VR-like laser pointing with raytrace enabled against THREE.Mesh objects in the scene
     
 .. code::
 
