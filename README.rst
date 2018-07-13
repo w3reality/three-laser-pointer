@@ -14,8 +14,8 @@ Demo 2: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/d
 ..
    :width: 640
 
-Demos
------
+Demo
+----
 
 zzzzzzzzzzzz
 
@@ -89,74 +89,105 @@ API
 
 - **constructor(options={})**
 
-  - ``options.color`` **number** 0xff0000
-  - ``options.maxPoints`` **number** 256
-  - ``options.infLength`` **number** 9999
+  Create a laser object with optional parameters.  For example,
+  ``new Laser({color: 0x00ff00, maxPoints: 16})`` creates a green laser object
+  that consists of maximally 15 (=16-1) line segments.
+
+  - ``options.color``\=0xff0000 **number (integer)** An integer (0x000000 - 0xffffff) encoding an RGB color.
+  - ``options.maxPoints``\=256 **number (integer)** The max number of 3D points that consist of the laser.
+  - ``options.infLength``\=9999.0 **number** The length of the last laser segment when raytracing goes to an infinity point.
 
 - **setSource(src, camera=null)**
+
+  Set the values of ``src`` to the source point of the laser.  When ``camera``
+  is provided, ``src`` is regarded as relative to the camera (i.e. camera
+  coordinates).  If not, ``src`` is interpreted as world coordinates.
 
   - ``src`` **THREE.Vector3**
   - ``camera`` **THREE.PerspectiveCamera**
 
 - **getSource()**
 
+  Returns a new vector instance with values corresponding to the current source
+  point set.
+  
   Returns **THREE.Vector3**
 
 - **point(pt, color=null)**
 
-  - ``pt`` **THREE.Vector3**
-  - ``color`` **number**
+  Shoot ``pt`` by the laser rendering a line segment between the source point
+  of the laser and ``pt``.  Optionally, ``color`` can be specified.
+  
+  - ``pt`` **THREE.Vector3** The target point to shoot.
+  - ``color`` **number (integer)** 0x000000 - 0xffffff
 
 - **pointWithRaytrace(pt, meshes=[], color=null, maxReflect=16)**
 
-  - ``pt`` **THREE.Vector3**
+  Shoot ``pt`` by the laser with raytracing enabled.  Ray reflections by
+  provided ``meshes`` are computed and rendered up to ``maxReflect`` times.
+  (Note: regardless of ``maxReflect``, the number of reflections is also
+  bounded less than or equal to ``maxPoints-2``.)
+  
+
+  - ``pt`` **THREE.Vector3** The target point to shoot.
   - ``meshes`` **Array<THREE.Mesh>**
-  - ``color`` **number**
-  - ``maxReflect`` **number**
+  - ``color`` **number (integer)** 0x000000 - 0xffffff
+  - ``maxReflect`` **number (integer)** The max number of reflections considered.
 
 - **getPoints()**
 
+  Get an array of the points (copied) that consist of the laser.
+  
   Returns **Array<THREE.Vector3>** 
 
 - **getMeshesHit()**
+
+  Get an array of the meshes that are hit by the laser after calling
+  ``pointWithRaytrace()``.
 
   Returns **Array<THREE.Mesh>**
      
 - **updatePoints(arr, isFlatten=false)**
 
+  Update (by overriding) the points that consist of the laser.  If
+  ``isFlatten`` is ``true``, ``arr`` can be a flatten **number** array, i.e.
+  (``[x0, y0, z0, x1, y1, z1, ...]``).
+  
   - ``arr`` **Array<THREE.Vector3 | number>**
   - ``isFlatten`` **boolean**
 
 - **clearPoints()**
 
-  aaaaaaaa
+  Clear the points that consist of the laser.  Thereafter, ``getPoints()``
+  will return ``[]``.
 
-- **static flattenPoints(arr)**
+- **raycastFromCamera(mx, my, width, height, camera, meshes)**
 
-  - ``arr`` **Array<THREE.Vector3>**
+  A utility method that casts a mouse ray to ``meshes`` provided.  If there are
+  intersects, it returns the nearest intersect from the camera.  Otherwise, it
+  returns ``null``.
+  
+  - ``mx`` **number** Coordinate x of a canvas point.
+  - ``my`` **number** Coordinate y of a canvas point.
+  - ``width`` **number** Canvas width.
+  - ``height`` **number** Canvas height.
+  - ``camera`` **THREE.PerspectiveCamera**
+  - ``meshes`` **Array<THREE.Mesh>** An array of meshes to test raycasting with.
 
-  Returns **Array<number>**
-
-- **raycastFromCamera(mx, my, width, height, cam, meshes)**
-
-  - ``mx`` **number**
-  - ``my`` **number**
-  - ``width`` **number**
-  - ``height`` **number**
-  - ``cam`` **THREE.PerspectiveCamera**
-  - ``meshes`` **Array<THREE.Mesh>**
-
-  Returns **Array<Object>** threejs intersect objects
+  Returns **Object | null** An `intersect object <https://threejs.org/docs/#api/core/Raycaster.intersectObject>`__ of three.js.
 
 - **setColor(color)**
 
-  - ``color`` **number** jjjjj
+  Set the RGB color of the laser.
+
+  - ``color`` **number (integer)** An integer (0x000000 - 0xffffff) encoding an RGB color.
 
 - **getColor()**
 
-  Returns **number** An integer (0x000000 -- 0xffffff) encoding an RGB color.
+  Get the RGB color of the laser.
 
-   
+  Returns **number (integer)** An integer (0x000000 - 0xffffff) encoding an RGB color.
+
 Build
 -----
 
