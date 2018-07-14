@@ -8,20 +8,19 @@ Laser pointer object using three.js
 Demo
 ----
 
+.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser-0.jpg
+   :target: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
+   :width: 640
+
+.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/refs-1.jpg
+   :target: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html
+   :width: 640
+
 .. raw:: html
 
-    <figure>
-        <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser-0.jpg" width="320">
-        <figcaption>this is a caption.</figcaption>
-    </figure>
-    <figure>
-        <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/refs-1.jpg" width="320">
-        <figcaption>this is a caption.</figcaption>
-    </figure>
-    <figure>
-        <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure.jpg" width="320">
-        <figcaption>this is a caption.</figcaption>
-    </figure>
+    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser-0.jpg" width="320">
+    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/refs-1.jpg" width="320">
+    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure.jpg" width="320">
 
 
 Demo 1: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
