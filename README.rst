@@ -3,29 +3,32 @@ three-laser-pointer
 
 [DRAFT]
 
-Laser pointer object using three.js
+**three-laser-pointer** is a three.js based library class that provides a reflective
+laser pointer.  It is especially suitable for adding a laser pointing
+interface in VR-like scenes where the camera is serving as first-person shooter,
+and not limited to this use case.
 
+The laser object has methods that are useful for
+
+- shooting interactive laser beams that self-reflect on THREE.Mesh objects in the
+  scene,
+- drawing dynamic 3D lines that consist of multiple line segments (good for making CAD-like tools),
+- mouse-to-laser translation (see how it works in demos).
+  
 Demo
 ----
 
-.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser-0.jpg
-   :target: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
-   :width: 640
+We present two demos using the three-laser-pointer library.
 
-.. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/refs-1.jpg
-   :target: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html
-   :width: 640
+- `demo-api <https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html>`__: Shooting a reflective laser onto simple THREE.Mesh objects.  Observe that the source/target points, colors, and raytracing parameters are fully configurable via API.
 
-.. raw:: html
+  .. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser-0.jpg
+     :target: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
 
-    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser-0.jpg" width="320">
-    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/refs-1.jpg" width="320">
-    <img src="https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure.jpg" width="320">
+- `demo-terrains <https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html>`__: Laser interaction with a terrain model.  Choosing "Measure" in Laser Mode allows us to pick precise 3D points on the models and measure the Euclidean distances between them.
 
-
-Demo 1: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
-
-Demo 2: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html
+  .. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure-0.jpg
+     :target: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html
 
 Setup
 -----

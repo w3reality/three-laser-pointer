@@ -21,7 +21,7 @@
 
         const canvas = document.getElementById("canvas");
         const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.1, 1000);
-        camera.position.set(0, 0, 5);
+        camera.position.set(0, 0, 7.5);
 
         const renderer = new THREE.WebGLRenderer({
             // alpha: true,
@@ -73,7 +73,7 @@
                     opacity: 1,
                     transparent: true,
                 }));
-            walls.rotation.y = Math.PI / 6;
+            walls.rotation.y = Math.PI / 8;
             walls.name = "walls";
             scene.add(walls);
 
