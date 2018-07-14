@@ -1,8 +1,6 @@
 three-laser-pointer
 ===================
 
-[DRAFT]
-
 **three-laser-pointer** is a three.js based library class that provides a reflective
 laser pointer.  It is especially suitable for adding a laser pointing
 interface in VR-like scenes where the camera is serving as first-person shooter,
@@ -18,14 +16,14 @@ The laser object has methods that are useful for
 Demo
 ----
 
-We present two demos using the three-laser-pointer library.
+We present two live demos using this three-laser-pointer library.
 
 - `demo-api <https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html>`__: Shooting a reflective laser onto simple THREE.Mesh objects.  Observe that the source/target points, colors, and raytracing parameters are fully configurable via API.
 
   .. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-api/laser-0.jpg
      :target: https://w3reality.github.io/three-laser-pointer/examples/demo-api/index.html
 
-- `demo-terrains <https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html>`__: Laser interaction with a terrain model.  Choosing "Measure" in Laser Mode allows us to pick precise 3D points on the models and measure the Euclidean distances between them.
+- `demo-terrains <https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html>`__: Laser interaction with THREE.Mesh models including a terrain.  Selecting "Measure" in Laser Mode allows us to pick precise 3D points on the models and measure the Euclidean distances between them.  Credits: we have used `the THREE.Terrain library <https://github.com/IceCreamYou/THREE.Terrain>`__ for generating the terrain model.
 
   .. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure-0.jpg
      :target: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html
