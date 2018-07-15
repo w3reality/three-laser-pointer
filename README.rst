@@ -10,7 +10,7 @@ The laser object has methods that are useful for
 
 - shooting interactive laser beams that self-reflect on THREE.Mesh objects in the
   scene,
-- drawing dynamic 3D lines that consist of multiple line segments (good for making CAD-like tools),
+- drawing dynamic 3D lines that consist of multiple line segments (good for making CAD-like tools), and
 - mouse-to-laser translation (see how it works in demos).
   
 Demo
@@ -31,7 +31,7 @@ We present two live demos using this three-laser-pointer library.
 Setup
 -----
 
-**Install**
+**Installation**
 
 .. code::
    
@@ -117,7 +117,7 @@ API
 
 - **getSource()**
 
-  Returns a new vector instance with values corresponding to the current source
+  Get a new vector instance with values corresponding to the current source
   point.
   
   Returns **THREE.Vector3**
@@ -159,7 +159,7 @@ API
      
 - **updatePoints(arr, isFlatten=false)**
 
-  Update (by overriding) the points that consist of the laser.  If
+  Update (by overriding) the points that represent the laser.  If
   ``isFlatten`` is ``true``, ``arr`` can be a flatten **number** array, i.e.
   (``[x0, y0, z0, x1, y1, z1, ...]``).
   
