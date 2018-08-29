@@ -50,7 +50,7 @@ Via the ES6 module system: use ``Laser`` after
    
 .. code::
 
-   import Laser from 'three-laser-pointer';
+   import Laser from 'three-laser-pointer/src';
 
 Usage
 -----
