@@ -5,16 +5,25 @@ import Stats from 'stats.js';
 // for three.terrain.js, load threejs via script tag in index.html
 import TerrainHelper from './terrain-helper.js';
 
+// note: errors occur when "modules": false in .babelrc
 import OrbitControls from 'three-es6-plugin/es6/OrbitControls';
-import OBJLoader from 'three-es6-plugin/es6/OBJLoader';
-import MTLLoader from 'three-es6-plugin/es6/MTLLoader';
-import DDSLoader from 'three-es6-plugin/es6/DDSLoader';
 
-// import LaserPointer from '../../../dist/three-laser-pointer.min'; // for prod
-// import LaserPointer from '../../../lib/three-laser-pointer'; // for dev
-// console.log('LaserPointer:', LaserPointer);
-import { Laser } from '../../../lib/three-laser-pointer'; // for dev
-console.log('Laser:', Laser);
+// Webpack 4
+//======== src/index.js: export default { Line, Laser };
+//---- works
+//import { Laser } from '../../../lib/three-laser-pointer';
+//---- NG: seems not go well with webpack4's "libraryExport: default"
+//import { Laser } from '../../../src';
+//---- works
+//import *  as LaserPointer from '../../../src';
+//console.log('LaserPointer:', LaserPointer);
+//const Laser = LaserPointer.default.Laser;
+//======== src/index.js: export default Laser;
+//---- works
+//import Laser from '../../../lib/three-laser-pointer';
+//---- works
+import Laser from '../../../src';
+
 
 import $ from 'jquery';
 // console.log('$:', $);

@@ -1,5 +1,5 @@
+// config for webpack 4
 const webpack = require('webpack');
-const UglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
 const path = require('path');
 const env = require('yargs').argv.env; // use --env with webpack 2
 const pkg = require('./package.json');
@@ -9,11 +9,12 @@ const outputPath = path.join(__dirname, './dist');
 
 const ThreeEs6Plugin = require('three-es6-plugin/dist');
 
-let plugins = [], outputFile;
+let plugins = [], outputFile, minimize;
 if (env === 'build') {
-    plugins.push(new UglifyJsPlugin({ minimize: true }));
+    minimize = true;
     outputFile = "[name].min.js";
 } else {
+    minimize = false;
     outputFile = "[name].js";
 }
 
@@ -37,7 +38,9 @@ module.exports = {
         path: outputPath,
         filename: outputFile,
     },
-    devtool: 'source-map',
+    optimization: {
+        minimize: minimize
+    },
     module: {
         rules: [
             {

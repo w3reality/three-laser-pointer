@@ -39,7 +39,7 @@ Setup
 
 **Loading**
 
-Via script tags: use ``LaserPointer.Laser`` after
+Via script tags: use ``Laser`` after
 
 .. code::
 
@@ -50,7 +50,7 @@ Via the ES6 module system: use ``Laser`` after
    
 .. code::
 
-   import { Laser } from 'three-laser-pointer';
+   import Laser from 'three-laser-pointer';
 
 Usage
 -----

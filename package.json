@@ -1,6 +1,6 @@
 {
     "name": "three-laser-pointer",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Laser pointer object using three.js",
     "main": "dist/three-laser-pointer.js",
     "directories": {
@@ -40,10 +40,11 @@
         "babel-plugin-add-module-exports": "^0.2.1",
         "babel-preset-env": "^1.6.1",
         "chai": "^4.1.2",
-        "eslint": "^4.13.1",
-        "eslint-loader": "^1.9.0",
+        "eslint": "^5.3.0",
+        "eslint-loader": "^2.1.0",
         "mocha": "^4.0.1",
-        "webpack": "^3.10.0",
+        "webpack": "^4.16.5",
+        "webpack-cli": "^3.1.0",
         "yargs": "^10.0.3"
     }
 }

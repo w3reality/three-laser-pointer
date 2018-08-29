@@ -1,21 +1,23 @@
 /* global __dirname, require, module */
 
+// config for webpack 4
+
 // based on https://github.com/krasimir/webpack-library-starter
 
 const webpack = require('webpack');
-const UglifyJsPlugin = webpack.optimize.UglifyJsPlugin;
 const path = require('path');
 const env = require('yargs').argv.env; // use --env with webpack 2
 const pkg = require('./package.json');
 
 let libraryName = 'three-laser-pointer'; // pkg.name;
-let libraryObjName = 'LaserPointer'; // name for window.MyModule via script tag loading
+let libraryObjName = 'Laser'; // name for script tag loading
 
-let plugins = [], outputFile;
+let plugins = [], outputFile, minimize;
 if (env === 'build') {
-    plugins.push(new UglifyJsPlugin({ minimize: true }));
+    minimize = true;
     outputFile = libraryName + '.min.js';
 } else {
+    minimize = false;
     outputFile = libraryName + '.js';
 }
 
@@ -29,10 +31,13 @@ const config = {
         filename: outputFile,
         library: libraryObjName,
         libraryTarget: 'umd',
+        libraryExport: 'default', // https://github.com/webpack/webpack/commit/de8fc51a6fe2aff3ea3a1c24d34d429897c3b694
         umdNamedDefine: false // must be 'false' for m to be resolved in require([''], (m) => {});
     },
     //========
-    devtool: 'source-map',
+    optimization: {
+        minimize: minimize
+    },
     module: {
         rules: [
             {

@@ -235,4 +235,5 @@ class Laser extends Line {
     }
 }
 
-export default { Line, Laser };
+//export default { Line, Laser }; // seems not go well with webpack4's "libraryExport: default"
+export default Laser;
