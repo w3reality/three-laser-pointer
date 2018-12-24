@@ -57,7 +57,7 @@ Usage
 
 - VR-like laser pointing
 
-.. code::
+.. code:: javascript
 
     // create and add a red laser in the scene
     var laser = new Laser({color: 0xff0000});
@@ -74,7 +74,7 @@ Usage
 
 - VR-like laser pointing with raytrace enabled against THREE.Mesh objects in the scene
     
-.. code::
+.. code:: javascript
 
     // create and add a green laser in the scene
     var laser = new Laser({color: 0x00ff00});
