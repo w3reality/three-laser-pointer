@@ -297,19 +297,22 @@ var Laser = function (_Line) {
         key: 'raycast',
         value: function raycast(origin, direction, meshes) {
             var faceExclude = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+            var recursive = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
 
             this._raycaster.set(origin, direction);
-            return this._raycast(meshes, false, faceExclude);
+            return this._raycast(meshes, recursive, faceExclude);
         }
     }, {
         key: 'raycastFromCamera',
         value: function raycastFromCamera(mx, my, width, height, cam, meshes) {
+            var recursive = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : false;
+
             var mouse = new THREE.Vector2( // normalized (-1 to +1)
             mx / width * 2 - 1, -(my / height) * 2 + 1);
             // https://threejs.org/docs/#api/core/Raycaster
             // update the picking ray with the camera and mouse position
             this._raycaster.setFromCamera(mouse, cam);
-            return this._raycast(meshes, false, null);
+            return this._raycast(meshes, recursive, null);
         }
     }, {
         key: 'getMeshesHit',

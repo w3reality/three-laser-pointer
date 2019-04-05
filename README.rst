@@ -171,7 +171,7 @@ API
   Clear the points that consist of the laser.  (Thereafter, ``getPoints()``
   will return ``[]``.)
 
-- **raycastFromCamera(mx, my, width, height, camera, meshes)**
+- **raycastFromCamera(mx, my, width, height, camera, meshes, recursive=false)**
 
   A utility method that casts a mouse-ray to ``meshes`` provided.  If there are
   intersects, it returns the nearest intersect from the camera.  Otherwise, it
@@ -183,6 +183,7 @@ API
   - ``height`` **number** Canvas height.
   - ``camera`` **THREE.PerspectiveCamera**
   - ``meshes`` **Array<THREE.Mesh>** An array of meshes to test raycasting with.
+  - ``recursive`` **boolean** If true, test for all descendant mesh objects.
 
   Returns **Object | null** An `intersect object <https://threejs.org/docs/#api/core/Raycaster.intersectObject>`__ of three.js.
 

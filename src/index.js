@@ -129,18 +129,18 @@ class Laser extends Line {
         }
         return isects.length > 0 ? isects[0] : null;
     }
-    raycast(origin, direction, meshes, faceExclude=null) {
+    raycast(origin, direction, meshes, faceExclude=null, recursive=false) {
         this._raycaster.set(origin, direction);
-        return this._raycast(meshes, false, faceExclude);
+        return this._raycast(meshes, recursive, faceExclude);
     }
-    raycastFromCamera(mx, my, width, height, cam, meshes) {
+    raycastFromCamera(mx, my, width, height, cam, meshes, recursive=false) {
         let mouse = new THREE.Vector2( // normalized (-1 to +1)
             (mx / width) * 2 - 1,
             - (my / height) * 2 + 1);
         // https://threejs.org/docs/#api/core/Raycaster
         // update the picking ray with the camera and mouse position
         this._raycaster.setFromCamera(mouse, cam);
-        return this._raycast(meshes, false, null);
+        return this._raycast(meshes, recursive, null);
     }
     getMeshesHit() {
         return this._meshes;
