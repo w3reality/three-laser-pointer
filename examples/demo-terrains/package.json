@@ -31,7 +31,7 @@
         "three": "^0.93.0",
         "three-es6-plugin": "^1.0.6",
         "three.terrain.js": "^1.6.0",
-        "webpack": "^4.16.5",
+        "webpack": "^4.41.2",
         "webpack-cli": "^3.1.0",
         "yargs": "^13.2.4"
     }
