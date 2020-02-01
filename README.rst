@@ -28,29 +28,12 @@ We present two live demos using this three-laser-pointer library.
   .. image:: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/measure-0.jpg
      :target: https://w3reality.github.io/three-laser-pointer/examples/demo-terrains/dist/index.html
 
-Setup
------
-
-**Installation**
+Installation
+------------
 
 .. code::
    
    $ npm install three-laser-pointer
-
-**Loading**
-
-Via script tags: use ``Laser`` after
-
-.. code::
-
-   <script src="three.min.js"></script>
-   <script src="dist/three-laser-pointer.min.js"></script>
-
-Via the ES6 module system: use ``Laser`` after
-   
-.. code::
-
-   import Laser from 'three-laser-pointer/src';
 
 Usage
 -----
