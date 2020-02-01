@@ -28,7 +28,7 @@
         "lodash": "^4.17.14",
         "mocha": "^6.1.4",
         "stats.js": "^0.17.0",
-        "three": "^0.93.0",
+        "three": "^0.112.1",
         "three-es6-plugin": "^1.0.6",
         "three.terrain.js": "^1.6.0",
         "webpack": "^4.41.2",
