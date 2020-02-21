@@ -1,6 +1,6 @@
 {
     "name": "three-laser-pointer",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "description": "Laser pointer object using three.js",
     "main": "dist/three-laser-pointer.js",
     "directories": {
@@ -8,7 +8,7 @@
         "test": "test"
     },
     "scripts": {
-        "dist": "npm run build && rm -rf ./dist && cp -r ./lib ./dist",
+        "dist": "npm run build && mkdir -p ./dist && cp ./lib/*min.js ./dist/",
         "build": "webpack --mode development --env dev && webpack --mode production --env build && npm run test",
         "dev": "webpack --mode development --progress --colors --watch --env dev",
         "test": "mocha --require babel-core/register --colors ./test/*.spec.js",

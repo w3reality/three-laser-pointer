@@ -32,7 +32,8 @@ const config = {
         library: libraryObjName,
         libraryTarget: 'umd',
         libraryExport: 'default', // https://github.com/webpack/webpack/commit/de8fc51a6fe2aff3ea3a1c24d34d429897c3b694
-        umdNamedDefine: false // must be 'false' for m to be resolved in require([''], (m) => {});
+        umdNamedDefine: false, // must be 'false' for m to be resolved in require([''], (m) => {});
+        globalObject: 'typeof self !== \'undefined\' ? self : this' // https://github.com/webpack/webpack/issues/6522 - Can't create UMD build which can be required by Node
     },
     //========
     optimization: {

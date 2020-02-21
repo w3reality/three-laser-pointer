@@ -1,9 +1,3 @@
-// if THREE is global (via script-tag loading), use that THREE to prevent
-// conflicts with ES6 version. (Line objects become broken, otherwise...)
-import * as THREE_ES6 from 'three';
-// console.log('window.THREE:', window.THREE);
-const THREE = window.THREE ? window.THREE : THREE_ES6;
-
 class Line extends THREE.Line {
     // ref. https://stackoverflow.com/questions/31399856/drawing-a-line-with-three-js-dynamically
     constructor(maxPoints, color=0xff0000) {
