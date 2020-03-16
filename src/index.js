@@ -1,6 +1,12 @@
+import { version as __version } from '../package.json';
+// const __version = 'n/a';
+
+import * as THREE from 'three';
+
 class Line extends THREE.Line {
     // ref. https://stackoverflow.com/questions/31399856/drawing-a-line-with-three-js-dynamically
     constructor(maxPoints, color=0xff0000) {
+        this.version = __version;
         let geometry = new THREE.BufferGeometry();
         let positions = new Float32Array( maxPoints * 3 );
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
