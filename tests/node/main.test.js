@@ -9,5 +9,6 @@ const Mod = require(__modPath);
 test('load', () => {
     expect(typeof Mod).toBe('function');
 
-    expect(Object.keys(new Mod())).toBe('zzz');
+    // expect(Object.keys(new Mod())).toBe('zzz');
+    // expect(require('three').REVISION).toBe('zzz');
 });
