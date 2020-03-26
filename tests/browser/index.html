@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
+    <title>tests</title>
+</head>
+<body>
+    <script src="__three.min.js"></script>
+    <script src="__tmp.min.js"></script>
+    <script type="module">
+        const output = {};
+
+        // test 'constructor'
+        output['constructor'] = typeof Laser;
+
+        // test '`new`'
+        const laser = new Laser();
+        output['new'] = laser.type;
+
+        // test 'misc - `{update,get,clear}Points()`'
+        const misc = [];
+        laser.updatePoints([0,0,0, 1,1,0, 2,2,2], true);
+        misc.push(laser.getPoints().length); // 3
+        laser.clearPoints();
+        misc.push(laser.getPoints().length); // 0
+        output['misc'] = misc;
+
+        // store results
+        window['output'] = output;
+    </script>
+</body>
+</html>
