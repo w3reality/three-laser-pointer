@@ -33,7 +33,7 @@
     },
     "homepage": "https://github.com/w3reality/three-laser-pointer",
     "devDependencies": {
-        "es-pack-js": "0.3.3",
-        "three": "^0.112.1"
+        "es-pack-js": "0.3.4-rc.0",
+        "three": "^0.115.0"
     }
 }
