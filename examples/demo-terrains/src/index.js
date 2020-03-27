@@ -1,32 +1,19 @@
+
+//---- External symbols
+
+import * as THREE from 'three';
+const OrbitControls = THREE.OrbitControls;
+// console.log('OrbitControls:', OrbitControls);
+
 import DatGuiDefaults from 'dat-gui-defaults';
 import Stats from 'stats.js';
+import $ from 'jquery';
 
-// import * as THREE from 'three';
-// for three.terrain.js, load threejs via script tag in index.html
+//---- Source imports
+
+import Laser from '../../../src';
 import TerrainHelper from './terrain-helper.js';
 
-// note: errors occur when "modules": false in .babelrc
-import OrbitControls from 'three-es6-plugin/es6/OrbitControls';
-
-// Webpack 4
-//======== src/index.js: export default { Line, Laser };
-//---- works
-//import { Laser } from '../../../lib/three-laser-pointer';
-//---- NG: seems not go well with webpack4's "libraryExport: default"
-//import { Laser } from '../../../src';
-//---- works
-//import *  as LaserPointer from '../../../src';
-//console.log('LaserPointer:', LaserPointer);
-//const Laser = LaserPointer.default.Laser;
-//======== src/index.js: export default Laser;
-//---- works
-//import Laser from '../../../lib/three-laser-pointer';
-//---- works
-import Laser from '../../../src';
-
-
-import $ from 'jquery';
-// console.log('$:', $);
 
 const canvas = document.getElementById("canvas");
 const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.001, 10000);

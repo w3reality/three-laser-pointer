@@ -1,6 +1,7 @@
 
-// assuming THREE is globally defined...
-import 'three.terrain.js';
+import * as THREE from 'three';
+
+// import 'three.terrain.js';
 // console.log(THREE.Terrain);
 
 class TerrainHelper {
