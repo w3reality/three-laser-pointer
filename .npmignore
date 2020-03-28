@@ -1,8 +1,10 @@
 examples/
 lib/
 test/
+.github/
 webpack.config.js
 README.rst
 .babelrc
 .eslintrc
+target
 
