@@ -1,6 +1,4 @@
 import { version as __version } from '../package.json';
-// const __version = 'n/a';
-
 import * as THREE from 'three';
 
 class Line extends THREE.Line {
@@ -235,5 +233,4 @@ class Laser extends Line {
     }
 }
 
-//export default { Line, Laser }; // seems not go well with webpack4's "libraryExport: default" ????
 export default Laser;
