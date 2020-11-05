@@ -1,4 +1,5 @@
 import { version as __version } from '../package.json';
+import Meta from 'es-pack-js/src/meta';
 import * as THREE from 'three';
 
 class Line extends THREE.Line {
@@ -12,7 +13,6 @@ class Line extends THREE.Line {
         });
         super(geometry, material);
 
-        this.version = __version;
         this._maxPoints = maxPoints;
         this._numPoints = 0;
     }
@@ -96,6 +96,8 @@ class Laser extends Line {
         let actual = Object.assign({}, defaults, options);
         super(actual.maxPoints, actual.color);
 
+        Meta.consoleLog(`Laser ${__version} with THREE r${THREE.REVISION}`);
+        this.version = __version;
         this._src = new THREE.Vector3(0, 0, 0);
         this._raycaster = new THREE.Raycaster();
         this._infLen = actual.infLength;
