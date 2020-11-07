@@ -12,5 +12,8 @@ module.exports = {
 
         const filename = webpackConfig.output.filename;
         webpackConfig.output.filename = filename.replace('no-pkg-name', 'app');
+
+        // for 'es-pack-js/src/meta'
+        webpackConfig.resolve.modules.push(path.resolve(`${__dirname}/../../node_modules`));
     },
 };
