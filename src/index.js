@@ -1,4 +1,6 @@
-import { version as __version } from '../package.json';
+import pkg from '../package.json';
+const __version = pkg.version;
+
 import Meta from 'es-pack-js/src/meta';
 import * as THREE from 'three';
 
