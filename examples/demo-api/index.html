@@ -7,18 +7,19 @@
 <body>
     <canvas id="canvas" style="width: 100%; height: 100%;"></canvas>
 
-    <script src="./three.min.js"></script>
     <script src="./stats.min.js"></script>
-    <script src="./OrbitControls.js"></script>
-
     <script src="./dat-gui-defaults.min.js"></script>
 
-    <script src="../../dist/three-laser-pointer.min.js"></script>
-    <!-- <script src="../../target/three-laser-pointer.min.js"></script> -->
-    <!-- <script src="../../lib/three-laser-pointer.js"></script> -->
+    <script type="module">
+    import * as THREE from '../deps/three/build/three.module.js';
+    window.THREE = THREE;
+    </script>
 
-    <script>
-        'use strict';
+    <script type="module">
+        import { OrbitControls } from '../deps/three/examples/jsm/controls/OrbitControls.js';
+
+        import Laser from '../../dist/three-laser-pointer.esm.js';
+        // import Laser from '../../target/three-laser-pointer.esm.dev.js';
 
         const canvas = document.getElementById("canvas");
         const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.1, 1000);
@@ -29,7 +30,7 @@
             canvas: canvas,
         });
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        const controls = new OrbitControls(camera, renderer.domElement);
 
         // https://stackoverflow.com/questions/29884485/threejs-canvas-size-based-on-container
         const resizeCanvasToDisplaySize = (force=false) => {
