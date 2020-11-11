@@ -1,7 +1,7 @@
 
 import * as THREE from 'three';
 
-// import 'three.terrain.js';
+// import 'THREE.Terrain.js';
 // console.log(THREE.Terrain);
 
 class TerrainHelper {
