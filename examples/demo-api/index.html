@@ -11,15 +11,12 @@
     <script src="../deps/dat-gui-defaults.min.js"></script>
 
     <script type="module">
-    import * as THREE from '../deps/three/build/three.module.js';
-    window.THREE = THREE;
-    </script>
+    import { OrbitControls } from '../deps/three/examples/jsm/controls/OrbitControls.js';
 
-    <script type="module">
-        import { OrbitControls } from '../deps/three/examples/jsm/controls/OrbitControls.js';
-
-        import Laser from '../../dist/three-laser-pointer.esm.js';
-        // import Laser from '../../target/three-laser-pointer.esm.dev.js';
+    (async () => {
+        window.THREE = await import('../deps/three/build/three.module.js');
+        const Laser = (await import('../../dist/three-laser-pointer.esm.js')).default;
+        // const Laser = (await import('../../target/three-laser-pointer.esm.dev.js')).default;
 
         const canvas = document.getElementById("canvas");
         const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.1, 1000);
@@ -267,6 +264,7 @@
             animate();
         }
         //---- end render
+    })();
     </script>
 </body>
 </html>
