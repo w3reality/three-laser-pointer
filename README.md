@@ -1,5 +1,7 @@
 # three-laser-pointer
 
+![](https://github.com/w3reality/three-laser-pointer/workflows/Build%20and%20Run/badge.svg)
+
 **three-laser-pointer** is a three.js based library class that provides a reflective laser pointer. It is especially suitable for adding a laser pointing interface in VR-like scenes where the camera is serving as first-person shooter, and not limited to this use case.
 
 The laser object has methods that are useful for
