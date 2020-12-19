@@ -1,6 +1,15 @@
 # three-laser-pointer
 
-![](https://github.com/w3reality/three-laser-pointer/workflows/Build%20and%20Run/badge.svg)
+[![NPM][npm-badge]][npm-url]
+[![MIT licensed][mit-badge]][mit-url]
+[![CI][actions-badge]][actions-url]
+
+[npm-badge]: https://img.shields.io/npm/v/three-laser-pointer.svg
+[npm-url]: https://www.npmjs.com/package/three-laser-pointer
+[mit-badge]: https://img.shields.io/badge/license-MIT-blue.svg
+[mit-url]: https://github.com/w3reality/three-laser-pointer/blob/master/LICENSE
+[actions-badge]: https://github.com/w3reality/three-laser-pointer/workflows/CI/badge.svg
+[actions-url]: https://github.com/w3reality/three-laser-pointer/actions
 
 **three-laser-pointer** is a three.js based library class that provides a reflective laser pointer. It is especially suitable for adding a laser pointing interface in VR-like scenes where the camera is serving as first-person shooter, and not limited to this use case.
 
