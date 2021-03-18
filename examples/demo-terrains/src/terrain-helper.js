@@ -1,8 +1,13 @@
 
 import * as THREE from 'three';
 
-// import 'THREE.Terrain.js';
-// console.log(THREE.Terrain);
+import getModule from './three-terrain.js';
+const ThreeTerrain = getModule(THREE); // @@ hackish
+
+//-------- https://discourse.threejs.org/t/three-geometry-will-be-removed-from-core-with-r125/22401/13
+const __ge125 = () => THREE.REVISION >= '125';
+console.warn('@@ __ge125():', __ge125());
+//--------
 
 class TerrainHelper {
     constructor(options={}) {
@@ -30,9 +35,9 @@ class TerrainHelper {
         };
         img.src = src;
     }
-    getTerrainScene(mat, img=THREE.Terrain.DiamondSquare) {
-        return THREE.Terrain({
-            easing: THREE.Terrain.Linear,
+    getTerrainScene(mat, img=ThreeTerrain.DiamondSquare) {
+        return ThreeTerrain({
+            easing: ThreeTerrain.Linear,
             frequency: 2.5, //????
             heightmap: img,
             // material: new THREE.MeshBasicMaterial({color: 0x5566aa}),
@@ -57,7 +62,7 @@ class TerrainHelper {
                 loader.load('./stone1.jpg', (t3) => {
                     loader.load('./snow1.jpg', (t4) => {
                         // t2.repeat.x = t2.repeat.y = 2;
-                        let blend = THREE.Terrain.generateBlendedMaterial([
+                        let blend = ThreeTerrain.generateBlendedMaterial([
                             {texture: t1},
                             {texture: t2, levels: [-80*mag, -35*mag, 20*mag, 50*mag]},
                             {texture: t3, levels: [20*mag, 50*mag, 60*mag, 85*mag]},
@@ -77,6 +82,7 @@ class TerrainHelper {
             new THREE.MeshLambertMaterial({ color: 0x3d2817 }), // brown
             new THREE.MeshLambertMaterial({ color: 0x2d4c1e }), // green
         ];
+
         let c0 = new THREE.Mesh(new THREE.CylinderGeometry(2*mag, 2*mag, 12*mag, 6*mag, 1*mag, true));
         c0.position.y = 6*mag;
         let c1 = new THREE.Mesh(new THREE.CylinderGeometry(0*mag, 10*mag, 14*mag, 8*mag));
@@ -86,12 +92,12 @@ class TerrainHelper {
         let c3 = new THREE.Mesh(new THREE.CylinderGeometry(0*mag, 8*mag, 12*mag, 8*mag));
         c3.position.y = 32*mag;
 
-        let g = new THREE.Geometry();
+        let g = new THREE.Geometry(); // @@ !__ge125() only
         c0.updateMatrix();
         c1.updateMatrix();
         c2.updateMatrix();
         c3.updateMatrix();
-        g.merge(c0.geometry, c0.matrix);
+        g.merge(c0.geometry, c0.matrix); // @@ `.merge()` not working when `g` is a BufferGeometry.
         g.merge(c1.geometry, c1.matrix);
         g.merge(c2.geometry, c2.matrix);
         g.merge(c3.geometry, c3.matrix);
@@ -107,18 +113,30 @@ class TerrainHelper {
         return m;
     }
     getScatterMeshesScene(terrainGeom, merge=true, mag=0.001, spread=0.02) {
-        // const _mesh = new THREE.Mesh(new THREE.CylinderGeometry(10*mag, 10*mag, 60*mag, 30*mag));
-        const _mesh = TerrainHelper.buildTree(mag);
+        let _mesh;
+        if (__ge125()) {
+            _mesh = new THREE.Mesh(
+                new THREE.CylinderGeometry(10*mag, 10*mag, 60*mag, 5),
+                new THREE.MeshBasicMaterial({color: 0xcccc00}));
+        } else {
+            _mesh = TerrainHelper.buildTree(mag);
+        }
+        console.log('@@ _mesh:', _mesh);
 
         if (!merge) {
-            // Kludge -
-            // Here we want to track indivisual scattered meshes.
-            // THREE.Terrain.ScatterMeshes() does not merge meshes when
-            // the geometry is THREE.Geometry.  So convert to THREE.BufferGeometry.
-            _mesh.geometry = new THREE.BufferGeometry().fromGeometry(_mesh.geometry);
+            // @@ Since three r125, `BufferGeometry` is enforced, so the type of
+            // `_mesh.geometry` is already `BufferGeometry`.
+            if (!__ge125()) {
+                // Kludge -
+                // Here we want to track indivisual scattered meshes.
+                // ThreeTerrain.ScatterMeshes() does not merge meshes when
+                // the geometry is THREE.Geometry.  So convert to THREE.BufferGeometry.
+                _mesh.geometry = new THREE.BufferGeometry().fromGeometry(_mesh.geometry);
+            }
         }
+
         return {
-            scene: THREE.Terrain.ScatterMeshes(terrainGeom, {
+            scene: ThreeTerrain.ScatterMeshes(terrainGeom, {
                 mesh: _mesh,
                 w: this.xS,
                 h: this.yS,

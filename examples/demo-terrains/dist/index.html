@@ -12,15 +12,18 @@
     <script src="../../deps/stats.min.js"></script>
     <script src="./deps/jquery.min.js"></script>
 
-    <!-- THREE.Terrain.min.js assumes use of `THREE.Terrain`; here reluctantly loading three.min.js -->
-    <script src="../../deps/three/build/three.min.js"></script>
-    <script src="./deps/THREE.Terrain.min.js"></script>
-
     <script type="module">
-    // import start from './app.esm.dev.js';
-    import start from './app.esm.js';
+    import { OrbitControls } from '../../deps/three/examples/jsm/controls/OrbitControls.js';
 
-    start();
+    (async () => {
+        const THREE = await import('../../deps/three/build/three.module.js');
+        window.THREE = THREE;
+
+        // const start = (await import('./app.esm.dev.js')).default;
+        const start = (await import('./app.esm.js')).default;
+
+        start(OrbitControls);
+    })();
     </script>
 </body>
 </html>

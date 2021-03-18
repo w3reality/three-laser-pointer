@@ -8,9 +8,8 @@ import $ from 'jquery';
 //---- Source imports
 import Laser from '../../../src';
 import TerrainHelper from './terrain-helper.js';
-import { OrbitControls } from '../../deps/three/examples/jsm/controls/OrbitControls.js';
 
-const start = () => {
+const start = (OrbitControls) => {
     const canvas = document.getElementById("canvas");
     const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.001, 10000);
     // camera.position.set(-0.1, 0.15, 0.5);
