@@ -8,21 +8,18 @@
     <canvas id="canvas" style="width: 100%; height: 100%;"></canvas>
     <div id="msg" style="position: absolute; top: 80%; color: white; background: #00000080;"></div>
 
+    <script src="../../deps/three/build/three.min.js"></script>
+    <script src="../../deps/three/examples/js/controls/OrbitControls.js"></script>
+    <script src="../../deps/three/examples/js/libs/stats.min.js"></script>
     <script src="../../deps/dat-gui-defaults.min.js"></script>
-    <script src="../../deps/stats.min.js"></script>
-    <script src="./deps/jquery.min.js"></script>
+    <script src="../../deps/threelet.min.js"></script>
 
     <script type="module">
-    import { OrbitControls } from '../../deps/three/examples/jsm/controls/OrbitControls.js';
-
     (async () => {
-        const THREE = await import('../../deps/three/build/three.module.js');
-        window.THREE = THREE;
+         const start = (await import('../target/app.esm.dev.js')).default;
+        //const start = (await import('./app.esm.js')).default;
 
-        // const start = (await import('./app.esm.dev.js')).default;
-        const start = (await import('./app.esm.js')).default;
-
-        start(OrbitControls);
+        start(THREE.OrbitControls, Stats, Threelet);
     })();
     </script>
 </body>
