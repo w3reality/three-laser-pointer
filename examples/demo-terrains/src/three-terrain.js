@@ -442,7 +442,7 @@ THREE.Terrain.Normalize = function(mesh, options) {
     mesh.geometry.verticesNeedUpdate = true;
     mesh.geometry.normalsNeedUpdate = true;
     mesh.geometry.computeBoundingSphere();
-    mesh.geometry.computeFaceNormals();
+    // mesh.geometry.computeFaceNormals();
     mesh.geometry.computeVertexNormals();
 };
 
@@ -1886,13 +1886,15 @@ THREE.Terrain.generateBlendedMaterial = function(textures) {
 
                 THREE.ShaderChunk.lightmap_fragment,
 
-            '    reflectedLight.indirectDiffuse *= BRDF_Diffuse_Lambert( diffuseColor.rgb );',
-            '    #ifdef DOUBLE_SIDED',
-            '            reflectedLight.directDiffuse = ( gl_FrontFacing ) ? vLightFront : vLightBack;',
-            '    #else',
-            '            reflectedLight.directDiffuse = vLightFront;',
-            '    #endif',
-            '    reflectedLight.directDiffuse *= BRDF_Diffuse_Lambert( diffuseColor.rgb ) * getShadowMask();',
+            // '    reflectedLight.indirectDiffuse *= BRDF_Diffuse_Lambert( diffuseColor.rgb );',
+            // '    #ifdef DOUBLE_SIDED',
+            // '            reflectedLight.directDiffuse = ( gl_FrontFacing ) ? vLightFront : vLightBack;',
+            // '    #else',
+            // '            reflectedLight.directDiffuse = vLightFront;',
+            // '    #endif',
+            // '    reflectedLight.directDiffuse *= BRDF_Diffuse_Lambert( diffuseColor.rgb ) * getShadowMask();',
+            //==== @@ workaround - 'BRDF_Diffuse_Lambert' : no matching overloaded function found
+            '    reflectedLight.directDiffuse = diffuseColor.rgb;',
 
                 // modulation
                 THREE.ShaderChunk.aomap_fragment,
