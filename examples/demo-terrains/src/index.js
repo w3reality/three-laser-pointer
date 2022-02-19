@@ -1,15 +1,14 @@
-
-//---- External symbols
+// External symbols
 import * as THREE from 'three';
 import DatGuiDefaults from 'dat-gui-defaults';
-import Stats from 'stats.js';
-import $ from 'jquery';
 
-//---- Source imports
+// Source imports
 import Laser from '../../../src';
 import TerrainHelper from './terrain-helper.js';
 
-const start = (OrbitControls) => {
+const start = (OrbitControls, Stats, Threelet) => {
+    const threelet = new Threelet(); // !!
+
     const canvas = document.getElementById("canvas");
     const camera = new THREE.PerspectiveCamera(75, canvas.width/canvas.height, 0.001, 10000);
     // camera.position.set(-0.1, 0.15, 0.5);
@@ -139,7 +138,22 @@ const start = (OrbitControls) => {
 
         const _wireframeMat = new THREE.MeshBasicMaterial({color: 0x5566aa, wireframe: true});
 
-        const $msg = $('#msg');
+        //
+
+        const appendText = (el, text) => {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(text));
+            el.appendChild(div);
+        };
+        const clear = (parent) => {
+            while (parent.firstChild) {
+                parent.firstChild.remove();
+            }
+        };
+
+        //
+
+        const msg = document.getElementById('msg');
         const toCoords = (vec, nFloats=3) => {
             return `(${vec.x.toFixed(nFloats)}, ${vec.y.toFixed(nFloats)}, ${vec.z.toFixed(nFloats)})`;
         };
@@ -151,22 +165,22 @@ const start = (OrbitControls) => {
             let srcPt = refPoints.shift();
             let infPt = refPoints.pop();
             // console.log('refPoints:', refPoints);
-            $msg.empty();
+            clear(msg);
             if (refPoints.length > 0) {
-                $msg.append(`<div>laser source: ${toCoords(srcPt)}</div>`);
-                $msg.append(`<div># reflections: ${refPoints.length}</div>`);
-                $msg.append(`<div>reflection points: ${toCoordsArray(refPoints)}</div>`);
-                // $msg.append(`<div>reflection meshes: ${laser.getMeshesHit().map(mesh => mesh.uuid).join(', ')}</div>`);
+                appendText(msg, `laser source: ${toCoords(srcPt)}`);
+                appendText(msg, `# reflections: ${refPoints.length}`);
+                appendText(msg, `reflection points: ${toCoordsArray(refPoints)}`);
+                // appendText(msg, `reflection meshes: ${laser.getMeshesHit().map(mesh => mesh.uuid).join(', ')}`);
             }
         };
         const showMeasureStats = (markPair) => {
-            $msg.empty();
+            clear(msg);
             if (markPair.length === 1) {
-                $msg.append(`<div>points: ${toCoords(markPair[0])} -> </div>`);
+                appendText(msg, `points: ${toCoords(markPair[0])} -> `);
             } else if (markPair.length === 2) {
                 let [p0, p1] = markPair;
-                $msg.append(`<div>points: ${toCoords(p0)} -> ${toCoords(p1)}</div>`);
-                $msg.append(`<div>length: ${p0.distanceTo(p1).toFixed(3)}</div>`);
+                appendText(msg, `points: ${toCoords(p0)} -> ${toCoords(p1)}`);
+                appendText(msg, `length: ${p0.distanceTo(p1).toFixed(3)}`);
             }
         };
 
