@@ -68,8 +68,6 @@
                 pick(mx, my, cam);
                 this.render();
             });
-
-            this._appData = { config, dg };
         }
 
         static init(canvas, scene) {
@@ -202,7 +200,7 @@
         canvas: document.getElementById('canvas'),
         optAxes: false,
     });
-    app.stats = app.setup('mod-stats', Stats, {panelType: 1});
+    app.setup('mod-stats', Stats, {panelType: 1});
     app.setup('mod-controls', THREE.OrbitControls);
 
     app.render(); // first time
