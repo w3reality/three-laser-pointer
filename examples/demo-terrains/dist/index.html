@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-type" content="text/html; charset=utf-8"/>
-    <title>demo</title>
+    <title>demo-terrains</title>
 </head>
 <body>
     <canvas id="canvas" style="width: 100%; height: 100%;"></canvas>
@@ -15,12 +15,10 @@
     <script src="../../deps/threelet.min.js"></script>
 
     <script type="module">
-    (async () => {
-         const start = (await import('../target/app.esm.dev.js')).default;
-        //const start = (await import('./app.esm.js')).default;
+    import start from '../target/app.esm.dev.js';
+    //import start from '../target/app.esm.js';
 
-        start(THREE.OrbitControls, Stats, Threelet);
-    })();
+    start(THREE.OrbitControls, Stats);
     </script>
 </body>
 </html>

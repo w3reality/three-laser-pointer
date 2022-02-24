@@ -6,6 +6,7 @@ module.exports = {
         webpackConfig.externals = {
             'three': 'THREE',
             'dat-gui-defaults': 'DatGuiDefaults',
+            'threelet': 'Threelet',
         };
 
         const filename = webpackConfig.output.filename;
