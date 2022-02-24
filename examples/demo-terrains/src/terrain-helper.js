@@ -151,10 +151,9 @@ class TerrainHelper {
         new THREE.TextureLoader().load('./sky1.jpg', (t1) => {
             t1.minFilter = THREE.LinearFilter; // Texture is not a power-of-two size; use smoother interpolation.
             const skyDome = new THREE.Mesh(
-                new THREE.SphereGeometry(8192, 16, 16, 0, Math.PI*2, 0, Math.PI*0.5),
+                new THREE.SphereGeometry(256, 16, 16, 0, Math.PI*2, 0, Math.PI*0.5),
                 new THREE.MeshBasicMaterial({map: t1, side: THREE.BackSide, fog: false})
             );
-            // skyDome.position.y = -99;
             skyDome.position.y = -0.99;
             cb(skyDome);
         });
@@ -164,7 +163,6 @@ class TerrainHelper {
             new THREE.PlaneBufferGeometry(16384+1024, 16384+1024, 16, 16),
             new THREE.MeshLambertMaterial({color: 0x006ba0, transparent: true, opacity: 0.6})
         );
-        // water.position.y = -99;
         water.position.y = -0.99;
         water.rotation.x = -0.5 * Math.PI;
         return water;
