@@ -6,45 +6,23 @@ import * as THREE from 'three';
 class Line extends THREE.Line {
     // ref. https://stackoverflow.com/questions/31399856/drawing-a-line-with-three-js-dynamically
     constructor(maxPoints, color=0xff0000) {
-        let geometry = new THREE.BufferGeometry();
-        let positions = new Float32Array( maxPoints * 3 );
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        let material = new THREE.LineBasicMaterial({
-            color: color,
-        });
-        super(geometry, material);
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(
+            new Float32Array(maxPoints * 3), 3));
+        super(geometry, new THREE.LineBasicMaterial({ color }));
 
         this._maxPoints = maxPoints;
         this._numPoints = 0;
     }
-    _frustumCullingWorkaround() {
-        // https://stackoverflow.com/questions/36497763/three-js-line-disappears-if-one-point-is-outside-of-the-cameras-view
-        this.geometry.computeBoundingSphere();
-        //----
-        // this.frustumCulled = false;
-    }
 
-    static _getPointsRandomWalk(numPoints) {
-        let positions = [];
-        let x = 0;
-        let y = 0;
-        let z = 0;
-        for (let i = 0; i < numPoints; i++) {
-            positions.push(x);
-            positions.push(y);
-            positions.push(z);
-            x += ( Math.random() - 0.5 ) * 2;
-            y += ( Math.random() - 0.5 ) * 2;
-            z += ( Math.random() - 0.5 ) * 2;
-        }
-        return positions;
-    }
     setColor(color) {
         this.material.color.setHex(color);
     }
+
     getColor() {
         return this.material.color;
     }
+
     getPoints() {
         let arr = this.geometry.attributes.position.array;
         let points = [];
@@ -53,10 +31,12 @@ class Line extends THREE.Line {
         }
         return points;
     }
+
     static flattenPoints(arrPoints) {
         return arrPoints.map(pt => [pt.x, pt.y, pt.z])
             .reduce((acc, ele) => acc.concat(ele));
     }
+
     updatePoints(arr, isFlatten=false) {
         if (!isFlatten) {
             arr = Laser.flattenPoints(arr);
@@ -78,23 +58,47 @@ class Line extends THREE.Line {
         this._frustumCullingWorkaround();
         this._numPoints = numPoints;
     }
+
     clearPoints() {
         this.updatePoints([], true);
     }
+
     updatePointsRandomWalk(numPoints) {
         this.updatePoints(Line._getPointsRandomWalk(numPoints), true);
-    };
+    }
+
+    static _getPointsRandomWalk(numPoints) {
+        let positions = [];
+        let x = 0;
+        let y = 0;
+        let z = 0;
+        for (let i = 0; i < numPoints; i++) {
+            positions.push(x);
+            positions.push(y);
+            positions.push(z);
+            x += ( Math.random() - 0.5 ) * 2;
+            y += ( Math.random() - 0.5 ) * 2;
+            z += ( Math.random() - 0.5 ) * 2;
+        }
+        return positions;
+    }
+
+    _frustumCullingWorkaround() {
+        // https://stackoverflow.com/questions/36497763/three-js-line-disappears-if-one-point-is-outside-of-the-cameras-view
+        this.geometry.computeBoundingSphere();
+        //----
+        // this.frustumCulled = false;
+    }
 }
 
 class Laser extends Line {
     constructor(options={}) {
-        // https://stackoverflow.com/questions/9602449/a-javascript-design-pattern-for-options-with-default-values
-        let defaults = {
+        const defaults = {
             color: 0xff0000,
             maxPoints: 256,
             infLength: 9999.0,
         };
-        let actual = Object.assign({}, defaults, options);
+        const actual = Object.assign({}, defaults, options);
         super(actual.maxPoints, actual.color);
 
         console.info(`Laser ${__version} with THREE r${THREE.REVISION}`);
@@ -104,20 +108,25 @@ class Laser extends Line {
         this._infLen = actual.infLength;
         this._meshes = [];
     }
+
     setSource(src, camera=null) {
         // in case camera is given, treat (x, y, z) as in the camera coords
         this._src = camera ? src.clone().applyMatrix4(camera.matrixWorld) : src.clone();
     }
+
     getSource() {
         return this._src.clone();
     }
+
     static direct(src, target) {
         return target.clone().sub(src).normalize();
     }
+
     static reflect(d, n) {
         // r = d - 2 * (d.n) n;  https://math.stackexchange.com/questions/13261/how-to-get-a-reflection-vector
         return d.clone().sub(n.clone().multiplyScalar(2*d.dot(n)));
     }
+
     _raycast(meshes, recursive, faceExclude) {
         let isects = this._raycaster.intersectObjects(meshes, recursive);
         if (faceExclude) {
@@ -130,22 +139,25 @@ class Laser extends Line {
         }
         return isects.length > 0 ? isects[0] : null;
     }
+
     raycast(origin, direction, meshes, faceExclude=null, recursive=false) {
         this._raycaster.set(origin, direction);
         return this._raycast(meshes, recursive, faceExclude);
     }
+
     raycastFromCamera(mx, my, width, height, cam, meshes, recursive=false) {
         let mouse = new THREE.Vector2( // normalized (-1 to +1)
             (mx / width) * 2 - 1,
             - (my / height) * 2 + 1);
-        // https://threejs.org/docs/#api/core/Raycaster
         // update the picking ray with the camera and mouse position
         this._raycaster.setFromCamera(mouse, cam);
         return this._raycast(meshes, recursive, null);
     }
+
     getMeshesHit() {
         return this._meshes;
     }
+
     point(pt, color=null) {
         // console.log("point():", this._src, pt);
         this.updatePoints([
@@ -156,6 +168,7 @@ class Laser extends Line {
             this.material.color.setHex(color);
         }
     }
+
     pointWithRaytrace(pt, meshes=[], color=null, maxReflect=16) {
         this.point(pt, color);
         if (maxReflect < 1) return;
@@ -170,7 +183,7 @@ class Laser extends Line {
         this.updatePoints([src.x, src.y, src.z, pt.x, pt.y, pt.z, ...arrRefs], true);
     }
 
-    // DEPRECATED: this recursive version has stack depth limitation
+    // legacy: this recursive version has stack depth limitation
     _computeReflectionsRecursive(src, dir, isect, meshes, maxReflect) {
         const arr = [];
 
@@ -230,6 +243,7 @@ class Laser extends Line {
         }
         return arr;
     }
+
     computeReflections(src, dir, isect, meshes, maxReflect) {
         // return this._computeReflectionsRecursive(src, dir, isect, meshes, maxReflect);
         return this._computeReflections(src, dir, isect, meshes, maxReflect);
