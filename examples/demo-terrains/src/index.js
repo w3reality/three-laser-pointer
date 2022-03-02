@@ -38,6 +38,7 @@ class Gui extends DatGuiDefaults {
                 this.applyDefaults();
                 config.onChangeVis(params.vis);
                 config.onChangeEvRender(params.evRender);
+                config.onMark(null, true);
                 config.onThunder(true);
 
                 Object.assign(config, params);
@@ -54,7 +55,7 @@ class App extends Threelet {
     // override
     onCreate(params) {
         const { width, height } = this.canvas;
-        const { config, pick, mark, markCancel } = App.init(
+        const { config, pick, markToggle, markCancel } = App.init(
             this.scene, this.render, width, height);
 
         config.onChangeVis = value => {
@@ -90,26 +91,6 @@ class App extends Threelet {
 
         //
 
-        const thunders = new THREE.Group();
-        this.scene.add(thunders);
-        config.onThunder = (clear=false) => {
-            if (clear) {
-                thunders.clear();
-            } else {
-                const th = new Laser({
-                    color: 0xffff00,
-                    maxPoints: 32,
-                });
-                th.updatePointsRandomWalk(32);
-
-                thunders.add(th);
-            }
-
-            this.render();
-        };
-
-        //
-
         const dg = new Gui(config);
         dg.setDefaults({
             vis: config.vis,
@@ -130,7 +111,7 @@ class App extends Threelet {
         const updateMeasureStats = markPair => App._updateMeasureStats(msg, markPair);
 
         this.on('pointer-move', (mx, my) => pick(mx, my, cam, updateRaytraceStats));
-        this.on('pointer-click', (mx, my) => mark(mx, my, cam, updateMeasureStats));
+        this.on('pointer-click', (mx, my) => markToggle(mx, my, cam, updateMeasureStats));
         this.on('pointer-click-right', (mx, my) => markCancel(updateMeasureStats));
     }
 
@@ -242,11 +223,47 @@ class App extends Threelet {
         let markPair = []; // now markPair.length === 0
         let _laserMarkColor;
 
+        //
+
         const config = { // defaults
             vis: "Textured",
             laserMode: "Raytrace",
             evRender: true,
         };
+
+        //
+
+        const marks = new THREE.Group();
+        scene.add(marks);
+        config.onMark = (laser, clear=false) => {
+            if (clear) {
+                marks.clear();
+            } else {
+                marks.add(laser);
+            }
+            render();
+        };
+
+        //
+
+        const thunders = new THREE.Group();
+        scene.add(thunders);
+        config.onThunder = (clear=false) => {
+            if (clear) {
+                thunders.clear();
+            } else {
+                const th = new Laser({
+                    color: 0xffff00,
+                    maxPoints: 32,
+                });
+                th.updatePointsRandomWalk(32);
+
+                thunders.add(th);
+            }
+            render();
+        };
+
+        //
 
         return { config,
             pick: (mx, my, cam, updateStats) => {
@@ -296,7 +313,7 @@ class App extends Threelet {
                 // console.log('#points:', _laser.getPoints().length);
                 if (config.laserMode === "Raytrace") updateStats(_laser);
             },
-            mark: (mx, my, cam, updateStats) => {
+            markToggle: (mx, my, cam, updateStats) => {
                 if (config.laserMode !== 'Measure') return;
 
                 let isect = _laser.raycastFromCamera(mx, my, width, height, cam, meshesInteraction);
@@ -312,7 +329,8 @@ class App extends Threelet {
                             color: _laserMarkColor,
                         });
                         laser.updatePoints(markPair);
-                        scene.add(laser);
+
+                        config.onMark(laser);
                     } else { // when markPair.length === 0 or 2
                         markPair = [pt,]; // now markPair.length === 1
                         // get a new random color
