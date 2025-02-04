@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs-extra');
-const { Server } = require('es-pack-js');
+const { Server, getBrowser } = require('es-pack-js');
 
 const libName = 'three-laser-pointer';
 const outDir = path.join(__dirname, '../../target');
@@ -9,8 +9,12 @@ const modPath = `${outDir}/${libName}.min.js`;
 
 const tmpModPath = `${__dirname}/__tmp.min.js`;
 
+describe(`Test Suite: using ${modPath}`, () => {
+
 let output;
+let browser = null;
 let server = null;
+
 beforeAll(async () => {
     const serveDir = __dirname;
     server = await (new Server(serveDir)).listen();
@@ -20,6 +24,7 @@ beforeAll(async () => {
         tmpThreePath);
     fs.copySync(modPath, tmpModPath);
 
+    browser = await getBrowser();
     const page = await browser.newPage();
     await page.goto(`http://localhost:${server.port}/index.html`);
 
@@ -31,7 +36,9 @@ beforeAll(async () => {
     fs.removeSync(tmpThreePath);
     fs.removeSync(tmpModPath);
 });
+
 afterAll(async () => {
+    await browser.close();
     server.close();
     server = null;
 });
@@ -45,3 +52,4 @@ test('constructor', () => {
 test('`new`', () => expect(output['new']).toBe('Line'));
 test('misc - `{update,get,clear}Points()`', () => expect(output['misc']).toEqual([3, 0]));
 
+}); // end of `describe()`

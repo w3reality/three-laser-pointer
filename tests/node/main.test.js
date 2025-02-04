@@ -5,6 +5,8 @@ const outDir = path.join(__dirname, '../../target');
 const __modPath = `${outDir}/${libName}.min.js`;
 //const __modPath = `${outDir}/${libName}.js`; // dev !!!!
 
+describe(`Test Suite: using ${__modPath}`, () => {
+
 const Mod = require(__modPath);
 test('constructor', () => {
     expect(typeof Mod).toBe('function');
@@ -21,3 +23,5 @@ test('misc - `{update,get,clear}Points()`', () => {
     laser.clearPoints();
     expect(laser.getPoints().length).toBe(0);
 });
+
+}); // end of `describe()`
